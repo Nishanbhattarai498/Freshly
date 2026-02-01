@@ -1,6 +1,4 @@
 
-
-
 import { pgTable, serial, text, timestamp, integer, doublePrecision, pgEnum, boolean } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -47,7 +45,7 @@ export const locations = pgTable('locations', {
   itemId: integer('item_id').references(() => items.id).notNull(),
   latitude: doublePrecision('latitude').notNull(),
   longitude: doublePrecision('longitude').notNull(),
-  address: text('address'),
+  address: text('address').notNull(),
 });
 
 // Claims Table
