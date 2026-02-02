@@ -6,6 +6,7 @@ import {eq,and,desc} from 'drizzle-orm';
 
 
 //Zod
+// Zod - for security
 const router= express.router()
  const createItemSchema =z.object({
     title:z.string().min(2),
@@ -36,7 +37,7 @@ try{
     );
     }
     //fetch data from database 
-//   item table
+
     const allItems = await db.query.items.findMany({
         where: whereClause ,
         with:{
