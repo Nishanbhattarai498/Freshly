@@ -36,7 +36,7 @@ try{
     );
     }
     //fetch data from database 
-
+//   item table
     const allItems = await db.query.items.findMany({
         where: whereClause ,
         with:{
