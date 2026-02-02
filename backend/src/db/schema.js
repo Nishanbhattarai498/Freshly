@@ -45,7 +45,7 @@ export const locations = pgTable('locations', {
   itemId: integer('item_id').references(() => items.id).notNull(),
   latitude: doublePrecision('latitude').notNull(),
   longitude: doublePrecision('longitude').notNull(),
-  address: text('address').notNull(),
+  address: text('address').notNull().notNull
 });
 
 // Claims Table
