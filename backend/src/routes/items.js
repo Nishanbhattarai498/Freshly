@@ -24,11 +24,11 @@ const router= express.router()
         address:z.string(),
     }),
  });
- // get all items on the feed home screen item lai display garauna 
+ // get all items on the feed home screen 
  router.get('/',async(req,res)=>
 {
 try{  
-    const{category} =req.query;//category ko query read
+    const{category} =req.query;//category 
     let whereClause =eq(items.status ,'AVAILABLE');
 
     if(category && category !=='ALL'){
@@ -75,7 +75,7 @@ router.get('/:id', async(req,res) =>{
     if(!item){
         return res.status(404).json({error :'Item not found'});
     }   
-    // select all ratings from the posted shopkeeper // mailey banana post gardai mero overall rating   //
+    // select all ratings from the posted shopkeeper // 
 
     const sellerRatings=  await db 
     .select()
@@ -115,5 +115,45 @@ router.get('/:id', async(req,res) =>{
     }
 }
  );
+ // Create new item
+router.post('/', requireAuth, async (req, res) => {
+  try {
+    const body = createItemSchema.parse(req.body);
+    const userId = req.auth.userId;
+
+    const newItem = await db.transaction(async (tx) => {
+      const insertedItems = await tx.insert(items).values({
+        userId,
+        title: body.title,
+        description: body.description,
+        quantity: body.quantity,
+        unit: body.unit,
+        expiryDate: new Date(body.expiryDate),
+        imageUrl: body.imageUrl,
+        category: body.category || 'Other',
+        status: 'AVAILABLE',
+        originalPrice: body.originalPrice,
+        discountedPrice: body.discountedPrice,
+        priceCurrency: body.priceCurrency,
+      }).returning();
+
+      const insertedItem = insertedItems[0];
+
+      await tx.insert(locations).values({
+        itemId: insertedItem.id,
+        latitude: body.location.latitude,
+        longitude: body.location.longitude,
+        address: body.location.address,
+      });
+
+      return insertedItem;
+    });
+
+    return res.status(201).json(newItem);
+  } catch (error) {
+    console.error('Create item error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 
