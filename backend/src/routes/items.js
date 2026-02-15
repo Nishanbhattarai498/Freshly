@@ -156,4 +156,122 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
+// Claim an item
+router.post('/:id/claim', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.auth.userId;
+
+    const item = await db.query.items.findFirst({
+      where: eq(items.id, parseInt(id)),
+    });
+
+    if (!item || item.status !== 'AVAILABLE') {
+      return res.status(400).json({ error: 'Item not available' });
+    }
+
+    if (item.userId === userId) {
+      return res.status(400).json({ error: 'Cannot claim your own item' });
+    }
+
+    await db.transaction(async (tx) => {
+      await tx.insert(claims).values({
+        itemId: item.id,
+        claimerId: userId,
+        status: 'PENDING',
+      });
+
+      await tx.update(items)
+        .set({ status: 'CLAIMED' })
+        .where(eq(items.id, item.id));
+    });
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Claim item error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete (soft) an item - only owner
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.auth.userId;
+
+    console.log(`Delete request - Item ID: ${id}, User ID: ${userId}`);
+
+    const itemId = parseInt(id);
+    if (isNaN(itemId)) {
+      console.error(`Invalid item ID: ${id}`);
+      return res.status(400).json({ error: 'Invalid item ID' });
+    }
+
+    const item = await db.query.items.findFirst({ where: eq(items.id, itemId) });
+    
+    if (!item) {
+      console.log(`Item ${itemId} not found`);
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    console.log(`Item found - Owner: ${item.userId}, Requester: ${userId}`);
+
+    if (item.userId !== userId) {
+      console.log(`Authorization failed - Item owner: ${item.userId}, Requester: ${userId}`);
+      return res.status(403).json({ error: 'Not authorized to delete this item' });
+    }
+
+    await db.update(items).set({ status: 'DELETED' }).where(eq(items.id, itemId));
+    console.log(`Item ${itemId} deleted successfully`);
+    
+    return res.json({ success: true, message: 'Item deleted successfully' });
+  } catch (error) {
+    console.error('Delete item error:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete item', 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+// Get items for a specific user
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { type } = req.query;
+
+    if (type === 'claimed') {
+      const userClaims = await db.query.claims.findMany({ 
+        where: eq(claims.claimerId, userId), 
+        with: { item: true } 
+      });
+      const claimedItems = (userClaims || []).map(c => c.item).filter(Boolean);
+      
+      const enriched = await Promise.all(claimedItems.map(async (it) => {
+        const full = await db.query.items.findFirst({ 
+          where: eq(items.id, it.id), 
+          with: { location: true, user: true } 
+        });
+        return full;
+      }));
+      return res.json(enriched);
+    }
+
+    const sharedAll = await db.query.items.findMany({
+      where: eq(items.userId, userId),
+      with: { location: true, user: true },
+      orderBy: [desc(items.createdAt)],
+    });
+
+    const shared = (sharedAll || []).filter(it => it.status !== 'DELETED');
+    return res.json(shared);
+  } catch (error) {
+    console.error('Get user items error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default router;
+
+
 
