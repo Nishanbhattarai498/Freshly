@@ -3,10 +3,11 @@ import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard,
 import { useSignIn, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Mail, Lock, ArrowRight, Key } from 'lucide-react-native';
-import InputField from '@/components/ui/InputField';
-import Button from '@/components/ui/Button';
+import InputField from '../../components/ui/InputField';
+import Button from '../../components/ui/Button';
 import * as Location from 'expo-location';
 import { useColorScheme } from 'react-native';
+import * as Crypto from 'expo-crypto';
 
 export default function Login() {
   const { signIn, setActive, isLoaded } = useSignIn();
