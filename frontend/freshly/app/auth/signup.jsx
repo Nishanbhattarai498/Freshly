@@ -4,8 +4,8 @@ import { useSignUp, useUser } from '@clerk/clerk-expo';
 import { useRouter, Redirect } from 'expo-router';
 import { Mail, Lock, Key, User } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import InputField from '@/components/ui/InputField';
-import Button from '@/components/ui/Button';
+import InputField from '../../components/ui/InputField';
+import Button from '../../components/ui/Button';
 import { useColorScheme } from 'react-native';
 
 export default function SignUp() {
