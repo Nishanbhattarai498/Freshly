@@ -4,7 +4,7 @@ import { useStore } from '../../store';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Calendar, MapPin, Package, Type, Scale, Check, Camera } from 'lucide-react-native';
-import CURRENCIES, { getCurrencySymbol } from '../utils/currencies';
+import { CURRENCIES, getCurrencySymbol } from '../../utils/currencies';
 import { useColorScheme } from 'nativewind';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';

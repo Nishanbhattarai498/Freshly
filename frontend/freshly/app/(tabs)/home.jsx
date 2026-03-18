@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { MapPin, Clock, Search, Bell, Calendar, Sparkles, ChevronRight, ArrowUpRight } from 'lucide-react-native';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useColorScheme } from 'nativewind';
-import { getCurrencySymbol } from '../utils/currencies';
+import { getCurrencySymbol } from '../../utils/currencies';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 

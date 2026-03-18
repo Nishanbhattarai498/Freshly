@@ -8,7 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useColorScheme } from 'nativewind';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { connectSocket } from '../../services/socket';
-import { useMessages } from '../contexts/MessagesContext';
+import { useMessages } from '../../contexts/MessagesContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function MessagesTab() {
