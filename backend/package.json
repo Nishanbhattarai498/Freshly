@@ -1,7 +1,21 @@
 {
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
   "dependencies": {
+    "@clerk/clerk-sdk-node": "^4.13.23",
+    "@clerk/express": "^2.0.5",
+    "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
-    "pg": "^8.17.2"
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
+    "pg": "^8.17.2",
+    "socket.io": "^4.8.3",
+    "svix": "^1.88.0",
+    "zod": "^4.3.6"
   }
 }

@@ -15,15 +15,9 @@ export default function Home() {
     if (!isLoaded) return;
 
     if (isSignedIn) {
-      const role = user?.unsafeMetadata?.role;
-
-      if (role === "SHOPKEEPER") {
-        router.replace("/protected/shopkeeper/dashboard");
-      } else {
-        router.replace("/protected/customer/home");
-      }
+      router.replace("/(tabs)/home");
     }
-  }, [isLoaded, isSignedIn, user]);
+  }, [isLoaded, isSignedIn]);
 
   return (
     <LinearGradient
@@ -70,7 +64,7 @@ export default function Home() {
         </Text>
 
         <TouchableOpacity
-          onPress={() => router.push("/auth/login")}
+          onPress={() => router.push("/(auth)/login")}
           style={{
             backgroundColor: "#6366f1",
             padding: 15,
@@ -86,7 +80,7 @@ export default function Home() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => router.push("/auth/signup")}
+          onPress={() => router.push("/(auth)/signup")}
           style={{
             backgroundColor: "#8b5cf6",
             padding: 15,

@@ -1,13 +1,14 @@
 import express from 'express';
-import {z} from zod ;
-import {db} from'../db/index.js';
-import {items,locations,claims,ratings}  from '../db/schema.js';
-import {eq,and,desc} from 'drizzle-orm';
+import { z } from 'zod';
+import { db } from '../db/index.js';
+import { items, locations, claims, ratings } from '../db/schema.js';
+import { eq, and, desc } from 'drizzle-orm';
+import { requireAuth } from '../middleware/auth.js';
 
 
 //Zod
 // Zod - for security
-const router= express.router()
+const router = express.Router();
  const createItemSchema =z.object({
     title:z.string().min(2),
     description:z.string().optional(),
@@ -64,7 +65,7 @@ router.get('/:id', async(req,res) =>{
         const{id} =req.params; //id= "12"
 
         
-    const item = await db.query.items.findfirst({
+    const item = await db.query.items.findFirst({
         where:eq(items.id,parseInt(id)),
         with:{
             location:true,

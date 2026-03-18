@@ -7,11 +7,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useUser } from '@clerk/clerk-expo';
 
 export default function TabLayout() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
+  const { user } = useUser();
+  const isShopkeeper = user?.unsafeMetadata?.role === 'SHOPKEEPER';
 
   const theme = useMemo(
     () => ({
@@ -185,6 +188,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="post"
         options={{
+          href: isShopkeeper ? '/post' : null,
           title: 'Create',
           tabBarIcon: ({ focused }) => <FabIcon focused={focused} />,
         }}
