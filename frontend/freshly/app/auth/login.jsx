@@ -6,8 +6,7 @@ import { Mail, Lock, ArrowRight, Key } from 'lucide-react-native';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import * as Location from 'expo-location';
-import { useColorScheme } from 'react-native';
-import * as Crypto from 'expo-crypto';
+import { useColorScheme } from 'nativewind';
 
 export default function Login() {
   const { signIn, setActive, isLoaded } = useSignIn();
@@ -34,7 +33,7 @@ export default function Login() {
         router.replace("/protected/customer/home");
       }
     }
-  }, [userLoaded, isSignedIn, user]);
+  }, [userLoaded, isSignedIn, user, router]);
 
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", (e) => {
@@ -109,7 +108,7 @@ export default function Login() {
 
         await requestLocationPermission();
       }
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Invalid Code", "Please try again.");
     } finally {
       setLoading(false);

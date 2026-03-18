@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { useSignUp, useUser } from '@clerk/clerk-expo';
-import { useRouter, Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Mail, Lock, Key, User } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from 'nativewind';
 
 export default function SignUp() {
   const { isLoaded, signUp, setActive } = useSignUp();
@@ -25,13 +25,6 @@ export default function SignUp() {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  if (!isLoaded || !userLoaded) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#16a34a" />
-      </View>
-    );
-  }
   useEffect(() => {
     if (isLoaded && userLoaded && isSignedIn) {
       const userRole = user?.unsafeMetadata?.role;
@@ -59,6 +52,14 @@ export default function SignUp() {
       hide.remove();
     };
   }, []);
+
+  if (!isLoaded || !userLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#16a34a" />
+      </View>
+    );
+  }
 
   const requestLocationPermission = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
