@@ -7,6 +7,7 @@ import itemRoutes from './routes/items.js';
 import userRoutes from './routes/users.js';
 import messageRoutes from './routes/messages.js';
 import notificationRoutes from './routes/notifications.js';
+import mlRoutes from './routes/ml.js';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use('/api/items', itemRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/ml', mlRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);

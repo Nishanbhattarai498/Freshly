@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, RefreshControl, StatusBar, ScrollView, Alert } from 'react-native';
-import { useStore } from '../../store';
 import { useRouter } from 'expo-router';
 import { MapPin, Clock, Search, Bell, Calendar, Sparkles, ChevronRight, ArrowUpRight } from 'lucide-react-native';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -8,9 +7,11 @@ import { useColorScheme } from 'nativewind';
 import { getCurrencySymbol } from '../../utils/currencies';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
+import { api } from '../../services/api';
 
 export default function Home() {
-  const { items, isLoading, fetchItems } = useStore();
+  const [items, setItems] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
   const { colorScheme } = useColorScheme();
   const [userAddress, setUserAddress] = React.useState(null);
@@ -66,9 +67,28 @@ export default function Home() {
     };
   }, []);
 
+  const fetchItems = React.useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const params = {};
+
+      if (selectedCategory && selectedCategory !== 'All') {
+        params.category = selectedCategory;
+      }
+
+      const response = await api.get('/items', { params });
+      setItems(response.data || []);
+    } catch (error) {
+      console.error('Fetch items error', error);
+      setItems([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedCategory]);
+
   useEffect(() => {
-    fetchItems(selectedCategory);
-  }, [fetchItems, selectedCategory]);
+    fetchItems();
+  }, [fetchItems]);
 
   const formatLocation = useMemo(
     () => (address) => {
@@ -352,7 +372,7 @@ export default function Home() {
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
-            onRefresh={() => fetchItems(selectedCategory)}
+            onRefresh={fetchItems}
             tintColor={colorScheme === 'dark' ? '#22c55e' : '#22c55e'}
             colors={['#22c55e']}
             progressBackgroundColor={colorScheme === 'dark' ? '#0f172a' : '#ffffff'}

@@ -2,7 +2,9 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "ml:train": "c:/Freshly/.venv/Scripts/python.exe ml/train_and_select_model.py --dataset ml/data/Dataset.csv --output-model ml/best_food_condition_model.joblib --output-metadata ml/best_food_condition_model.metadata.json",
+    "ml:predict-sample": "c:/Freshly/.venv/Scripts/python.exe ml/predict_condition.py --model ml/best_food_condition_model.joblib --name orange --temp 23 --humidity 95 --light 8 --co2 350"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",

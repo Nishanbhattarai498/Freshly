@@ -1,0 +1,72 @@
+{
+  "dataset": "c:\\Freshly\\backend\\ml\\data\\Dataset.csv",
+  "dataset_rows": 10995,
+  "input_features": [
+    "Fruit",
+    "Temp",
+    "Humid (%)",
+    "Light (Fux)",
+    "CO2 (pmm)"
+  ],
+  "target_labels": {
+    "0": "bad",
+    "1": "good"
+  },
+  "cv_folds": 5,
+  "leaderboard": [
+    {
+      "name": "ExtraTrees",
+      "accuracy_mean": 0.9990904956798545,
+      "accuracy_std": 0.0006431166722933704,
+      "precision_mean": 0.9992943761406619,
+      "recall_mean": 0.9989414876146269,
+      "f1_mean": 0.9991176985881699
+    },
+    {
+      "name": "RandomForest",
+      "accuracy_mean": 0.9989085948158254,
+      "accuracy_std": 0.0007388848026044646,
+      "precision_mean": 0.9992951525406859,
+      "recall_mean": 0.9985884426013876,
+      "f1_mean": 0.9989410970816763
+    },
+    {
+      "name": "GradientBoosting",
+      "accuracy_mean": 0.9978171896316507,
+      "accuracy_std": 0.0006032969150259976,
+      "precision_mean": 0.9984120634018089,
+      "recall_mean": 0.9973526293914643,
+      "f1_mean": 0.9978811023870826
+    },
+    {
+      "name": "KNN",
+      "accuracy_mean": 0.9963619827194179,
+      "accuracy_std": 0.001286233344586725,
+      "precision_mean": 0.9964723465925118,
+      "recall_mean": 0.9964707951762968,
+      "f1_mean": 0.996471260209509
+    },
+    {
+      "name": "SVM_RBF",
+      "accuracy_mean": 0.990632105502501,
+      "accuracy_std": 0.001135970531768684,
+      "precision_mean": 0.9987456715258188,
+      "recall_mean": 0.9830597545807901,
+      "f1_mean": 0.9908393314411945
+    }
+  ],
+  "selected_model": "ExtraTrees",
+  "selected_accuracy_mean": 0.9990904956798545,
+  "selected_train_metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "confusion_matrix": {
+      "tn": 5328,
+      "fp": 0,
+      "fn": 0,
+      "tp": 5667
+    }
+  }
+}

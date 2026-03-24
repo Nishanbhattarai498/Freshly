@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, PlusCircle, User, MessageCircle } from 'lucide-react-native';
+import { Home, PlusCircle, User, MessageCircle, FlaskConical } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { useColorScheme } from 'nativewind';
 import { View, StyleSheet, Pressable } from 'react-native';
@@ -183,6 +183,13 @@ export default function TabLayout() {
         options={{
           title: 'Messages',
           tabBarIcon: ({ color, focused }) => <TabIcon Icon={MessageCircle} focused={focused} color={color} />, 
+        }}
+      />
+      <Tabs.Screen
+        name="predict"
+        options={{
+          title: 'Predict',
+          tabBarIcon: ({ color, focused }) => <TabIcon Icon={FlaskConical} focused={focused} color={color} />, 
         }}
       />
       <Tabs.Screen

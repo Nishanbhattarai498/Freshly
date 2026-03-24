@@ -30,10 +30,11 @@ const router = express.Router();
  router.get('/',async(req,res)=>
 {
 try{  
-    const{category} =req.query;//category 
+  const{category} =req.query;//category 
+
     let whereClause =eq(items.status ,'AVAILABLE');
 
-    if(category && category !=='ALL'){
+  if(category && category !=='ALL'){
         whereClause = and(whereClause,eq(items.category,category)
     );
     }

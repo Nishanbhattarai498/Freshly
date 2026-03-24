@@ -1,0 +1,23 @@
+{
+  "source_dataset": "data\\Dataset.csv",
+  "model": "best_food_condition_model.joblib",
+  "external_dataset": "data\\external_like_test_dataset.csv",
+  "test_rows": 2199,
+  "class_balance": {
+    "good": 1133,
+    "bad": 1066
+  },
+  "metrics": {
+    "accuracy": 0.8790359254206458,
+    "precision": 0.8306636155606407,
+    "recall": 0.9611650485436893,
+    "f1": 0.8911620294599017,
+    "confusion_matrix": {
+      "tn": 844,
+      "fp": 222,
+      "fn": 44,
+      "tp": 1089
+    }
+  },
+  "note": "External-like test generated from unseen stratified rows with realistic sensor perturbation."
+}
