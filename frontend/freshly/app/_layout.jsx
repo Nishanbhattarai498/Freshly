@@ -7,14 +7,14 @@ const tokenCache = {
   async getToken(key) {
     try {
       return await SecureStore.getItemAsync(key);
-    } catch (err) {
+    } catch (_err) {
       return null;
     }
   },
   async saveToken(key, value) {
     try {
       return await SecureStore.setItemAsync(key, value);
-    } catch (err) {
+    } catch (_err) {
       return;
     }
   },
@@ -33,17 +33,16 @@ const InitialLayout = () => {
 
   useEffect(() => {
     if (!isLoaded) return;
-    
-    const inProtectedGroup = segments[0] === 'protected' || segments[0] === '(tabs)';
-    
-    if (isSignedIn && !inProtectedGroup && segments[0] !== 'index' && segments[0] !== '(items)') {
-      // Could push to index which handles the role routing
-      router.replace('/');
-    } else if (!isSignedIn && inProtectedGroup) {
-      // Redirect to login if unauthenticated and trying to access protected route
+
+    const inAuthGroup = segments[0] === '(auth)';
+    const inTabsGroup = segments[0] === '(tabs)';
+
+    if (isSignedIn && inAuthGroup) {
+      router.replace('/(tabs)/home');
+    } else if (!isSignedIn && inTabsGroup) {
       router.replace('/(auth)/login');
     }
-  }, [isSignedIn, isLoaded, segments]);
+  }, [isSignedIn, isLoaded, segments, router]);
 
   return <Slot />;
 };

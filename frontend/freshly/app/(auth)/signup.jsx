@@ -1,20 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard, Alert, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
 import { useSignUp, useUser } from '@clerk/clerk-expo';
-<<<<<<< HEAD
 import { useRouter } from 'expo-router';
-=======
-import { useRouter, Redirect } from 'expo-router';
->>>>>>> origin/frontend-sangita
 import { Mail, Lock, Key, User } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
-<<<<<<< HEAD
-import { useColorScheme } from 'nativewind';
-=======
-import { useColorScheme } from 'react-native';
->>>>>>> origin/frontend-sangita
 
 export default function SignUp() {
   const { isLoaded, signUp, setActive } = useSignUp();
@@ -33,24 +24,9 @@ export default function SignUp() {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [loading, setLoading] = useState(false);
 
-<<<<<<< HEAD
-=======
-  if (!isLoaded || !userLoaded) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#16a34a" />
-      </View>
-    );
-  }
->>>>>>> origin/frontend-sangita
   useEffect(() => {
     if (isLoaded && userLoaded && isSignedIn) {
-      const userRole = user?.unsafeMetadata?.role;
-      if (userRole === "SHOPKEEPER") {
-        router.replace("/protected/shopkeeper/dashboard");
-      } else {
-        router.replace("/protected/customer/home");
-      }
+      router.replace("/(tabs)/home");
     }
   }, [isLoaded, userLoaded, isSignedIn, user, router]);
 
@@ -71,7 +47,6 @@ export default function SignUp() {
     };
   }, []);
 
-<<<<<<< HEAD
   if (!isLoaded || !userLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -80,8 +55,7 @@ export default function SignUp() {
     );
   }
 
-=======
->>>>>>> origin/frontend-sangita
+  
   const requestLocationPermission = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {

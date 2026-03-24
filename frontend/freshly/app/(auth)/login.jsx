@@ -1,17 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard, ScrollView, ActivityIndicator, Alert, useColorScheme } from 'react-native';
 import { useSignIn, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Mail, Lock, ArrowRight, Key } from 'lucide-react-native';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import * as Location from 'expo-location';
-<<<<<<< HEAD
-import { useColorScheme } from 'nativewind';
-=======
-import { useColorScheme } from 'react-native';
-import * as Crypto from 'expo-crypto';
->>>>>>> origin/frontend-sangita
 
 export default function Login() {
   const { signIn, setActive, isLoaded } = useSignIn();
@@ -31,18 +25,9 @@ export default function Login() {
     if (!userLoaded) return;
 
     if (isSignedIn && user) {
-      const role = user?.unsafeMetadata?.role;
-      if (role === "SHOPKEEPER") {
-        router.replace("/protected/shopkeeper/dashboard");
-      } else {
-        router.replace("/protected/customer/home");
-      }
+      router.replace("/(tabs)/home");
     }
-<<<<<<< HEAD
   }, [userLoaded, isSignedIn, user, router]);
-=======
-  }, [userLoaded, isSignedIn, user]);
->>>>>>> origin/frontend-sangita
 
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", (e) => {
@@ -82,10 +67,7 @@ export default function Login() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        const role = result?.createdUser?.unsafeMetadata?.role;
-
-        if (role === "SHOPKEEPER") router.replace("/protected/shopkeeper/dashboard");
-        else router.replace("/protected/customer/home");
+        router.replace("/(tabs)/home");
 
         await requestLocationPermission();
       } else if (result.status === "needs_first_factor") {
@@ -110,18 +92,11 @@ export default function Login() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        const role = result?.createdUser?.unsafeMetadata?.role;
-
-        if (role === "SHOPKEEPER") router.replace("/protected/shopkeeper/dashboard");
-        else router.replace("/protected/customer/home");
+        router.replace("/(tabs)/home");
 
         await requestLocationPermission();
       }
-<<<<<<< HEAD
     } catch (_err) {
-=======
-    } catch (err) {
->>>>>>> origin/frontend-sangita
       Alert.alert("Invalid Code", "Please try again.");
     } finally {
       setLoading(false);
@@ -190,7 +165,7 @@ export default function Login() {
 
           <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 30 }}>
             <Text style={{ color: isDark ? "#9ca3af" : "#374151" }}>New user?</Text>
-            <TouchableOpacity onPress={() => router.push("/auth/signup")}>
+            <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
               <Text style={{ color: "#22c55e", fontWeight: "600", marginLeft: 5 }}>Register</Text>
             </TouchableOpacity>
           </View>

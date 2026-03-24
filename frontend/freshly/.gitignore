@@ -41,7 +41,8 @@ app-example
 # generated native folders
 /ios
 /android
-<<<<<<< HEAD
-=======
+
+
+
 .env
->>>>>>> origin/frontend-sangita
+node_modules

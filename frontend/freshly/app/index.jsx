@@ -1,15 +1,14 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, TouchableOpacity, useColorScheme } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useUser } from "@clerk/clerk-expo";
-import { useEffect } from "react";
 
 export default function Home() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn } = useUser();
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -17,7 +16,7 @@ export default function Home() {
     if (isSignedIn) {
       router.replace("/(tabs)/home");
     }
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, router]);
 
   return (
     <LinearGradient
