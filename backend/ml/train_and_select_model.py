@@ -4,15 +4,21 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
-from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import ExtraTreesClassifier, GradientBoostingClassifier, RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
 from sklearn.impute import SimpleImputer
-from sklearn.model_selection import StratifiedKFold, cross_validate
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import StratifiedKFold, cross_validate, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.svm import SVC
 
 
 EXPECTED_COLUMNS = ["Fruit", "Temp", "Humid (%)", "Light (Fux)", "CO2 (pmm)", "Class"]
@@ -21,12 +27,12 @@ INPUT_COLUMNS = ["Fruit", "Temp", "Humid (%)", "Light (Fux)", "CO2 (pmm)"]
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Compare 5 classifiers and save the best model for food condition prediction.",
+        description="Compare 2 classifiers (Logistic Regression & Naive Bayes) and save the best model for food condition prediction.",
     )
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=Path("data") / "Dataset.csv",
+        default=Path("data") / "Dataset_deduplicated.csv",
         help="Path to dataset CSV",
     )
     parser.add_argument(
@@ -101,7 +107,7 @@ def build_preprocessors():
                 Pipeline(
                     steps=[
                         ("imputer", SimpleImputer(strategy="most_frequent")),
-                        ("onehot", OneHotEncoder(handle_unknown="ignore")),
+                        ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
                     ]
                 ),
                 categorical_features,
@@ -126,7 +132,7 @@ def build_preprocessors():
                 Pipeline(
                     steps=[
                         ("imputer", SimpleImputer(strategy="most_frequent")),
-                        ("onehot", OneHotEncoder(handle_unknown="ignore")),
+                        ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
                     ]
                 ),
                 categorical_features,
@@ -144,63 +150,29 @@ def build_preprocessors():
 
 def build_models(preprocess_scaled, preprocess_unscaled):
     return {
-        "ExtraTrees": Pipeline(
-            steps=[
-                ("preprocess", preprocess_unscaled),
-                (
-                    "model",
-                    ExtraTreesClassifier(
-                        n_estimators=400,
-                        random_state=42,
-                        class_weight="balanced",
-                        n_jobs=-1,
-                    ),
-                ),
-            ]
-        ),
-        "RandomForest": Pipeline(
-            steps=[
-                ("preprocess", preprocess_unscaled),
-                (
-                    "model",
-                    RandomForestClassifier(
-                        n_estimators=300,
-                        random_state=42,
-                        class_weight="balanced_subsample",
-                        n_jobs=-1,
-                    ),
-                ),
-            ]
-        ),
-        "GradientBoosting": Pipeline(
-            steps=[
-                ("preprocess", preprocess_unscaled),
-                ("model", GradientBoostingClassifier(random_state=42)),
-            ]
-        ),
-        "KNN": Pipeline(
+        "LogisticRegression": Pipeline(
             steps=[
                 ("preprocess", preprocess_scaled),
-                ("model", KNeighborsClassifier(n_neighbors=15, weights="distance")),
+                ("model", LogisticRegression(max_iter=1000, random_state=42)),
             ]
         ),
-        "SVM_RBF": Pipeline(
+        "NaiveBayes": Pipeline(
             steps=[
                 ("preprocess", preprocess_scaled),
-                ("model", SVC(kernel="rbf", C=2.0, gamma="scale", probability=True, random_state=42)),
+                ("model", GaussianNB()),
             ]
         ),
     }
 
 
-def evaluate_models(X, y, models, folds: int):
+def evaluate_models(X_train, y_train, models, folds: int):
     cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
     results = []
     for name, model in models.items():
         scores = cross_validate(
             model,
-            X,
-            y,
+            X_train,
+            y_train,
             cv=cv,
             scoring={
                 "accuracy": "accuracy",
@@ -228,22 +200,29 @@ def evaluate_models(X, y, models, folds: int):
 def main():
     args = parse_args()
     X, y = load_dataset(args.dataset)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        random_state=42,
+        stratify=y,
+    )
 
     preprocess_scaled, preprocess_unscaled = build_preprocessors()
     models = build_models(preprocess_scaled, preprocess_unscaled)
-    leaderboard = evaluate_models(X, y, models, folds=args.cv_folds)
+    leaderboard = evaluate_models(X_train, y_train, models, folds=args.cv_folds)
 
     best_name = leaderboard[0]["name"]
     best_model = models[best_name]
-    best_model.fit(X, y)
+    best_model.fit(X_train, y_train)
 
-    train_pred = best_model.predict(X)
-    tn, fp, fn, tp = confusion_matrix(y, train_pred, labels=[0, 1]).ravel()
-    train_metrics = {
-        "accuracy": float((train_pred == y).mean()),
-        "precision": float(precision_score(y, train_pred)),
-        "recall": float(recall_score(y, train_pred)),
-        "f1": float(f1_score(y, train_pred)),
+    y_pred = best_model.predict(X_test)
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred, labels=[0, 1]).ravel()
+    test_metrics = {
+        "accuracy": float(accuracy_score(y_test, y_pred)),
+        "precision": float(precision_score(y_test, y_pred)),
+        "recall": float(recall_score(y_test, y_pred)),
+        "f1": float(f1_score(y_test, y_pred)),
         "confusion_matrix": {
             "tn": int(tn),
             "fp": int(fp),
@@ -251,6 +230,7 @@ def main():
             "tp": int(tp),
         },
     }
+    report = classification_report(y_test, y_pred, target_names=["bad", "good"])
 
     args.output_model.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(best_model, args.output_model)
@@ -258,13 +238,16 @@ def main():
     metadata = {
         "dataset": str(args.dataset),
         "dataset_rows": int(len(X)),
+        "train_rows": int(len(X_train)),
+        "test_rows": int(len(X_test)),
         "input_features": INPUT_COLUMNS,
         "target_labels": {"0": "bad", "1": "good"},
         "cv_folds": int(args.cv_folds),
         "leaderboard": leaderboard,
         "selected_model": best_name,
         "selected_accuracy_mean": leaderboard[0]["accuracy_mean"],
-        "selected_train_metrics": train_metrics,
+        "selected_test_metrics": test_metrics,
+        "selected_test_classification_report": report,
     }
 
     args.output_metadata.parent.mkdir(parents=True, exist_ok=True)
@@ -276,9 +259,12 @@ def main():
             "saved_metadata": str(args.output_metadata),
             "selected_model": best_name,
             "selected_accuracy_mean": round(leaderboard[0]["accuracy_mean"], 4),
+            "final_test_accuracy": round(test_metrics["accuracy"], 4),
         },
         indent=2,
     ))
+    print("\nFinal classification report on untouched test set:\n")
+    print(report)
 
 
 if __name__ == "__main__":
