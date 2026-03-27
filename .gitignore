@@ -3,6 +3,9 @@ frontend/freshly/.expo/
 frontend/freshly/node_modules/
 backend/node_modules/
 .venv/
+**/.env
+**/.env.*
+!**/.env.example
 **/__pycache__/
 *.py[cod]
 ml-diagrams-export.zip
