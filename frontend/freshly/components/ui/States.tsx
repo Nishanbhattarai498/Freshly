@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
+import { useColorScheme } from 'nativewind';
 
 type LoadingViewProps = {
   message?: string;
@@ -27,29 +28,70 @@ type EmptyViewProps = {
   message?: string;
 };
 
-export const LoadingView = ({ message = 'Loading...' }: LoadingViewProps) => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <ActivityIndicator size="large" color="#0000ff" />
-    <Text style={{ marginTop: 10 }}>{message}</Text>
-  </View>
-);
+export const LoadingView = ({ message = 'Loading...' }: LoadingViewProps) => {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
-export const ErrorView = ({ message = 'An error occurred', onRetry }: ErrorViewProps) => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-    <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-      Error
-    </Text>
-    <Text style={{ textAlign: 'center', marginBottom: 20 }}>{message}</Text>
-    {onRetry && (
-      <Text
-        style={{ color: 'blue', fontSize: 16, padding: 10 }}
-        onPress={onRetry}
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#020617' : '#f8fafc' }}>
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingVertical: 18,
+          borderRadius: 20,
+          backgroundColor: isDark ? '#0f172a' : '#ffffff',
+          borderWidth: 1,
+          borderColor: isDark ? '#334155' : '#e2e8f0',
+          alignItems: 'center',
+        }}
       >
-        Retry
-      </Text>
-    )}
-  </View>
-);
+        <ActivityIndicator size="large" color="#10b981" />
+        <Text style={{ marginTop: 10, color: isDark ? '#e2e8f0' : '#334155', fontWeight: '600' }}>{message}</Text>
+      </View>
+    </View>
+  );
+};
+
+export const ErrorView = ({ message = 'An error occurred', onRetry }: ErrorViewProps) => {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: isDark ? '#020617' : '#f8fafc' }}>
+      <View
+        style={{
+          width: '100%',
+          maxWidth: 420,
+          padding: 18,
+          borderRadius: 20,
+          backgroundColor: isDark ? '#0f172a' : '#ffffff',
+          borderWidth: 1,
+          borderColor: isDark ? '#334155' : '#e2e8f0',
+        }}
+      >
+        <Text style={{ fontSize: 18, fontWeight: '800', marginBottom: 8, color: isDark ? '#f8fafc' : '#0f172a' }}>
+          Something went wrong
+        </Text>
+        <Text style={{ color: isDark ? '#cbd5e1' : '#475569' }}>{message}</Text>
+        {onRetry ? (
+          <Pressable
+            onPress={onRetry}
+            style={{
+              marginTop: 14,
+              paddingVertical: 10,
+              paddingHorizontal: 14,
+              borderRadius: 12,
+              alignSelf: 'flex-start',
+              backgroundColor: '#10b981',
+            }}
+          >
+            <Text style={{ color: '#ffffff', fontWeight: '700' }}>Retry</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
+  );
+};
 
 export const StatusPopup = ({
   visible,
@@ -63,6 +105,9 @@ export const StatusPopup = ({
   onSecondary,
   onClose,
 }: StatusPopupProps) => {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   if (!visible) return null;
 
   const effectiveTitle = title || (type === 'success' ? 'Success' : type === 'error' ? 'Something went wrong' : 'Notice');
@@ -85,17 +130,17 @@ export const StatusPopup = ({
     >
       <View
         style={{
-          backgroundColor: '#ffffff',
+          backgroundColor: isDark ? '#0f172a' : '#ffffff',
           padding: 16,
           borderRadius: 16,
           width: '100%',
           borderWidth: 1,
-          borderColor: '#e2e8f0',
+          borderColor: isDark ? '#334155' : '#e2e8f0',
         }}
       >
         <Text style={{ color: accent, fontWeight: '800', fontSize: 16 }}>{effectiveTitle}</Text>
         {effectiveMessage ? (
-          <Text style={{ color: '#334155', marginTop: 8 }}>{effectiveMessage}</Text>
+          <Text style={{ color: isDark ? '#cbd5e1' : '#334155', marginTop: 8 }}>{effectiveMessage}</Text>
         ) : null}
 
         <View style={{ flexDirection: 'row', marginTop: 14 }}>
@@ -110,11 +155,11 @@ export const StatusPopup = ({
                 marginRight: 8,
                 paddingVertical: 10,
                 borderRadius: 12,
-                backgroundColor: '#f1f5f9',
+                backgroundColor: isDark ? '#1f2937' : '#f1f5f9',
                 alignItems: 'center',
               }}
             >
-              <Text style={{ color: '#0f172a', fontWeight: '700' }}>{secondaryLabel}</Text>
+              <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontWeight: '700' }}>{secondaryLabel}</Text>
             </Pressable>
           ) : null}
 
@@ -139,8 +184,13 @@ export const StatusPopup = ({
   );
 };
 
-export const EmptyView = ({ message = 'No data available' }: EmptyViewProps) => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text style={{ fontSize: 16, color: '#999' }}>{message}</Text>
-  </View>
-);
+export const EmptyView = ({ message = 'No data available' }: EmptyViewProps) => {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ fontSize: 16, color: isDark ? '#94a3b8' : '#64748b' }}>{message}</Text>
+    </View>
+  );
+};

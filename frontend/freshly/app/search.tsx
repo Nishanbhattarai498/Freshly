@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Search, UserRound, Package2, Sparkles } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
@@ -87,14 +87,14 @@ export default function SearchScreen() {
       const response = await api.post('/messages/start', { receiverId });
       router.push(`/messages/${response.data.id}`);
     } catch {
-      // No-op; keeping UX stable even when messaging endpoint is unavailable.
+      Alert.alert('Chat unavailable', 'Could not open chat right now. Please try again.');
     }
   };
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-950">
+    <View className="flex-1 bg-slate-50 dark:bg-slate-950">
       <LinearGradient
-        colors={isDark ? ['#0f172a', '#142032'] : ['#e0f2fe', '#dcfce7']}
+        colors={isDark ? ['#0f172a', '#064e3b'] : ['#e0f2fe', '#dcfce7']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="px-6 pt-14 pb-8 rounded-b-[28px]"
@@ -143,7 +143,7 @@ export default function SearchScreen() {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => router.push(`/(item)/${item.id}`)}
-              className="mb-3 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900"
+              className="mb-3 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 shadow-sm"
             >
               <View className="flex-row">
                 <Image source={{ uri: item.imageUrl || 'https://via.placeholder.com/120' }} className="w-24 h-24" />
@@ -170,7 +170,7 @@ export default function SearchScreen() {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => startConversation(item.id)}
-              className="mb-3 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 flex-row items-center"
+              className="mb-3 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 flex-row items-center shadow-sm"
             >
               <Image source={{ uri: item.avatarUrl || 'https://via.placeholder.com/80' }} className="w-12 h-12 rounded-full" />
               <View className="flex-1 ml-3">

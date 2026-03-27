@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, TouchableOpacity, type TextInputProps, type ViewStyle } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
 
 type InputFieldProps = TextInputProps & {
   label?: string;
@@ -31,8 +32,22 @@ export default function InputField({
   numberOfLines,
   ...props
 }: InputFieldProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   const [isFocused, setIsFocused] = useState(false);
   const [hidePassword, setHidePassword] = useState(secureTextEntry);
+
+  const labelColor = isDark ? '#cbd5e1' : '#334155';
+  const helperColor = isDark ? '#94a3b8' : '#64748b';
+  const inputTextColor = isDark ? '#f8fafc' : '#0f172a';
+  const placeholderColor = isDark ? '#64748b' : '#94a3b8';
+  const inputBg = isDark ? '#0f172a' : '#ffffff';
+  const inputBorder = error
+    ? '#ef4444'
+    : isFocused
+      ? '#14b8a6'
+      : (isDark ? '#334155' : '#cbd5e1');
 
   return (
     <View className={containerClassName} style={[{ marginBottom: 16 }, containerStyle]}>
@@ -41,7 +56,7 @@ export default function InputField({
           style={{
             marginBottom: 6,
             fontWeight: '700',
-            color: '#334155',
+            color: labelColor,
             letterSpacing: 0.1,
           }}
         >
@@ -55,16 +70,12 @@ export default function InputField({
             flexDirection: "row",
             alignItems: "center",
             borderWidth: 1,
-            borderColor: error
-              ? '#ef4444'
-              : isFocused
-                ? '#14b8a6'
-                : '#cbd5e1',
+            borderColor: inputBorder,
             borderRadius: 14,
             paddingHorizontal: 14,
-            backgroundColor: '#ffffff',
+            backgroundColor: inputBg,
             shadowColor: '#0f172a',
-            shadowOpacity: isFocused ? 0.08 : 0.04,
+            shadowOpacity: isFocused ? (isDark ? 0.2 : 0.08) : (isDark ? 0.12 : 0.04),
             shadowRadius: 10,
             shadowOffset: { width: 0, height: 4 },
             elevation: isFocused ? 2 : 0,
@@ -87,10 +98,10 @@ export default function InputField({
             flex: 1,
             paddingVertical: multiline ? 12 : 13,
             fontSize: 15,
-            color: '#0f172a',
+            color: inputTextColor,
             textAlignVertical: multiline ? 'top' : 'center',
           }}
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={placeholderColor}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           {...props}
@@ -101,9 +112,9 @@ export default function InputField({
             onPress={() => setHidePassword(!hidePassword)}
           >
             {hidePassword ? (
-              <Eye size={20} color="#64748b" />
+              <Eye size={20} color={helperColor} />
             ) : (
-              <EyeOff size={20} color="#64748b" />
+              <EyeOff size={20} color={helperColor} />
             )}
           </TouchableOpacity>
         )}
@@ -115,7 +126,7 @@ export default function InputField({
         <Text
           style={{
             marginTop: 6,
-            color: '#64748b',
+            color: helperColor,
             fontSize: 12,
           }}
         >

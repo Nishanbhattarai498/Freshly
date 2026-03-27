@@ -1,9 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { api } from '../../services/api';
 import { connectSocket } from '../../services/socket';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useColorScheme } from 'nativewind';
+import { SendHorizonal } from 'lucide-react-native';
 
 type ChatMessage = {
   id: number;
@@ -11,6 +14,25 @@ type ChatMessage = {
   conversationId?: number;
   content?: string | null;
   createdAt?: string;
+};
+
+type ChatUser = {
+  id: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+};
+
+type ConversationPayload = {
+  id: number;
+  participant1Id: string;
+  participant2Id: string;
+  participant1?: ChatUser | null;
+  participant2?: ChatUser | null;
+};
+
+type ConversationResponse = {
+  conversation?: ConversationPayload;
+  messages?: ChatMessage[];
 };
 
 type NewMessageEvent = {
@@ -26,15 +48,43 @@ const getErrorMessage = (e: unknown, fallback: string) => {
 };
 
 export default function ConversationScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams();
-  const conversationId = useMemo(() => Number(id), [id]);
+  const conversationId = useMemo(() => {
+    const value = Array.isArray(id) ? id[0] : id;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    return parsed;
+  }, [id]);
   const { getToken, userId, isLoaded } = useAuth();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const getTokenRef = useRef(getToken);
+
+  useEffect(() => {
+    getTokenRef.current = getToken;
+  }, [getToken]);
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [otherUser, setOtherUser] = useState<ChatUser | null>(null);
+
+  const getTokenWithTimeout = useCallback(async () => {
+    const timeoutMs = 9000;
+    return await Promise.race<string | null>([
+      (async () => {
+        try {
+          return await getTokenRef.current();
+        } catch {
+          return null;
+        }
+      })(),
+      new Promise<string | null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
+  }, []);
 
   const loadConversation = useCallback(async () => {
     if (!isLoaded) {
@@ -42,7 +92,7 @@ export default function ConversationScreen() {
       return;
     }
 
-    if (!conversationId || Number.isNaN(conversationId)) {
+    if (!conversationId) {
       setError('Invalid conversation id.');
       setLoading(false);
       return;
@@ -64,7 +114,7 @@ export default function ConversationScreen() {
     }, 14000);
 
     try {
-      const token = await getToken();
+      const token = await getTokenWithTimeout();
       if (!token) {
         setError('Session unavailable. Please login again.');
         setLoading(false);
@@ -75,7 +125,23 @@ export default function ConversationScreen() {
         timeout: 12000,
         headers: { Authorization: `Bearer ${token}` },
       });
-      const nextMessages = Array.isArray(response?.data?.messages) ? (response.data.messages as ChatMessage[]) : [];
+
+      const data = (response?.data || {}) as ConversationResponse;
+      const nextMessages = Array.isArray(data.messages) ? data.messages : [];
+      const conv = data.conversation;
+
+      if (conv) {
+        const fallbackPeerId = conv.participant1Id === userId ? conv.participant2Id : conv.participant1Id;
+        const peer = conv.participant1Id === userId ? conv.participant2 : conv.participant1;
+        setOtherUser({
+          id: peer?.id || fallbackPeerId,
+          displayName: peer?.displayName || 'Unknown User',
+          avatarUrl: peer?.avatarUrl || null,
+        });
+      } else {
+        setOtherUser(null);
+      }
+
       setMessages(nextMessages.reverse());
       setError('');
     } catch (e) {
@@ -85,7 +151,7 @@ export default function ConversationScreen() {
       clearTimeout(loadingGuard);
       setLoading(false);
     }
-  }, [conversationId, getToken, isLoaded, userId]);
+  }, [conversationId, getTokenWithTimeout, isLoaded, userId]);
 
   useEffect(() => {
     loadConversation();
@@ -103,7 +169,7 @@ export default function ConversationScreen() {
   }, [isLoaded]);
 
   useEffect(() => {
-    if (!userId || !conversationId || Number.isNaN(conversationId)) return;
+    if (!userId || !conversationId) return;
 
     const socket = connectSocket(userId);
     const joinConversation = () => {
@@ -139,11 +205,11 @@ export default function ConversationScreen() {
 
   const sendMessage = useCallback(async () => {
     const content = input.trim();
-    if (!content || sending || !conversationId || Number.isNaN(conversationId)) return;
+    if (!content || sending || !conversationId) return;
 
     setSending(true);
     try {
-      const token = await getToken();
+      const token = await getTokenWithTimeout();
       if (!token) {
         setError('Session unavailable. Please login again.');
         return;
@@ -162,7 +228,22 @@ export default function ConversationScreen() {
     } finally {
       setSending(false);
     }
-  }, [conversationId, getToken, input, sending]);
+  }, [conversationId, getTokenWithTimeout, input, sending]);
+
+  if (!conversationId && !loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-950 px-6">
+        <Text className="text-lg font-bold text-slate-900 dark:text-white">Invalid chat</Text>
+        <Text className="mt-2 text-center text-slate-600 dark:text-slate-300">This conversation link is not valid.</Text>
+        <TouchableOpacity
+          onPress={() => router.replace('/(tabs)/messages')}
+          className="mt-5 px-5 py-3 rounded-2xl bg-emerald-600"
+        >
+          <Text className="text-white font-semibold">Back to Messages</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (loading) {
     return (
@@ -178,25 +259,41 @@ export default function ConversationScreen() {
       className="flex-1 bg-white dark:bg-gray-950"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View className="px-4 pt-14 pb-3 border-b border-gray-200 dark:border-gray-800">
-        <Text className="text-xl font-bold text-gray-900 dark:text-white">Conversation #{conversationId}</Text>
-        {error ? <Text className="text-rose-600 mt-1">{error}</Text> : null}
+      <LinearGradient
+        colors={isDark ? ['#0f172a', '#064e3b'] : ['#dbeafe', '#dcfce7']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="px-5 pt-14 pb-5 rounded-b-[24px]"
+      >
+        <View className="flex-row items-center">
+          <Image
+            source={{ uri: otherUser?.avatarUrl || 'https://via.placeholder.com/72' }}
+            className="w-12 h-12 rounded-full border border-white/40 dark:border-slate-600"
+          />
+          <View className="ml-3 flex-1">
+            <Text className="text-xs font-semibold uppercase tracking-[2px] text-slate-700 dark:text-slate-200">Freshly Chat</Text>
+            <Text className="text-2xl font-black text-slate-900 dark:text-white mt-0.5" numberOfLines={1}>
+              {otherUser?.displayName || 'Conversation'}
+            </Text>
+          </View>
+        </View>
+        {error ? <Text className="text-rose-700 dark:text-rose-300 mt-2">{error}</Text> : <Text className="text-slate-600 dark:text-slate-300 mt-2">Real-time messaging is active</Text>}
         {error ? (
-          <TouchableOpacity onPress={loadConversation} className="mt-2 self-start px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800">
-            <Text className="text-xs font-semibold text-gray-700 dark:text-gray-200">Retry</Text>
+          <TouchableOpacity onPress={loadConversation} className="mt-3 self-start px-3 py-2 rounded-xl bg-white/85 dark:bg-slate-900/85 border border-slate-200 dark:border-slate-700">
+            <Text className="text-xs font-semibold text-slate-800 dark:text-slate-100">Retry</Text>
           </TouchableOpacity>
         ) : null}
-      </View>
+      </LinearGradient>
 
       <FlatList
         data={messages}
         keyExtractor={(item, idx) => String(item?.id ?? idx)}
-        contentContainerStyle={{ padding: 16, paddingBottom: 90 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 96, paddingTop: 14 }}
         renderItem={({ item }) => {
           const mine = item?.senderId === userId;
           return (
             <View className={`mb-3 ${mine ? 'items-end' : 'items-start'}`}>
-              <View className={`max-w-[85%] px-4 py-2 rounded-2xl ${mine ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-gray-800'}`}>
+              <View className={`max-w-[86%] px-4 py-2.5 rounded-2xl ${mine ? 'bg-emerald-600 border border-emerald-500' : 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}>
                 <Text className={`${mine ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
                   {item?.content || '(media message)'}
                 </Text>
@@ -217,14 +314,15 @@ export default function ConversationScreen() {
           onChangeText={setInput}
           placeholder="Type a message"
           placeholderTextColor="#9ca3af"
-          className="flex-1 px-4 py-3 rounded-2xl bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white"
+          className="flex-1 px-4 py-3 rounded-2xl bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700"
         />
         <TouchableOpacity
-          className="ml-2 px-4 py-3 rounded-2xl bg-emerald-600"
+          className="ml-2 w-12 h-12 rounded-2xl bg-emerald-600 items-center justify-center"
           onPress={sendMessage}
           disabled={sending}
+          activeOpacity={0.88}
         >
-          <Text className="text-white font-semibold">{sending ? '...' : 'Send'}</Text>
+          {sending ? <ActivityIndicator size="small" color="#ffffff" /> : <SendHorizonal size={18} color="#ffffff" />}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

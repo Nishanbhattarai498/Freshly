@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { Trophy, Flame, PackageOpen, HandHeart } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useColorScheme } from 'nativewind';
 import { api } from '../services/api';
 
 type Leader = {
@@ -33,6 +34,8 @@ type AchievementsPayload = {
 };
 
 export default function AchievementsScreen() {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const [data, setData] = useState<AchievementsPayload | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,9 +64,9 @@ export default function AchievementsScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-white dark:bg-gray-950" contentContainerStyle={{ paddingBottom: 120 }}>
+    <ScrollView className="flex-1 bg-slate-50 dark:bg-slate-950" contentContainerStyle={{ paddingBottom: 120 }}>
       <LinearGradient
-        colors={['#0ea5e9', '#10b981']}
+        colors={isDark ? ['#0f172a', '#064e3b'] : ['#0ea5e9', '#10b981']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="px-6 pt-14 pb-9 rounded-b-[30px]"
@@ -74,7 +77,7 @@ export default function AchievementsScreen() {
       </LinearGradient>
 
       <View className="px-6 mt-6">
-        <View className="rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5">
+        <View className="rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <View className="flex-row justify-between">
             <View className="items-center flex-1">
               <Flame size={20} color="#ef4444" />
@@ -94,13 +97,13 @@ export default function AchievementsScreen() {
           </View>
         </View>
 
-        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5">
+        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <Text className="text-lg font-bold text-gray-900 dark:text-white">Your Rank</Text>
           <Text className="text-sm text-gray-600 dark:text-gray-400 mt-2">Sharing: {data?.rank.shared ? `#${data.rank.shared}` : 'Not ranked yet'}</Text>
           <Text className="text-sm text-gray-600 dark:text-gray-400">Claiming: {data?.rank.claimed ? `#${data.rank.claimed}` : 'Not ranked yet'}</Text>
         </View>
 
-        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5">
+        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <View className="flex-row items-center mb-3">
             <Trophy size={18} color="#eab308" />
             <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">Top Sharers</Text>
@@ -113,7 +116,7 @@ export default function AchievementsScreen() {
           ))}
         </View>
 
-        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5">
+        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <View className="flex-row items-center mb-3">
             <Trophy size={18} color="#eab308" />
             <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">Top Claimers</Text>

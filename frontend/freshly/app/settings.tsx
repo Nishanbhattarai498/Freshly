@@ -59,14 +59,17 @@ export default function SettingsScreen() {
 
   return (
     <View className="flex-1 bg-white dark:bg-gray-950">
-      <LinearGradient colors={['#dbeafe', '#dcfce7']} className="px-6 pt-14 pb-8 rounded-b-[28px]">
-        <Text className="text-xs uppercase tracking-[2px] text-slate-700 font-bold">Control Panel</Text>
-        <Text className="text-3xl font-black text-slate-900 mt-2">Settings</Text>
-        <Text className="text-slate-700 mt-2">Personalize how your Freshly experience feels.</Text>
+      <LinearGradient
+        colors={isDark ? ['#0f172a', '#064e3b'] : ['#dbeafe', '#dcfce7']}
+        className="px-6 pt-14 pb-8 rounded-b-[28px]"
+      >
+        <Text className="text-xs uppercase tracking-[2px] text-slate-700 dark:text-slate-200 font-bold">Control Panel</Text>
+        <Text className="text-3xl font-black text-slate-900 dark:text-white mt-2">Settings</Text>
+        <Text className="text-slate-700 dark:text-slate-300 mt-2">Personalize how your Freshly experience feels.</Text>
       </LinearGradient>
 
       <View className="px-6 mt-6">
-        <View className="rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 mb-4">
+        <View className="rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 mb-4 shadow-sm">
           <View className="flex-row items-center mb-3">
             <SunMedium size={18} color="#0ea5e9" />
             <Text className="text-gray-900 dark:text-white font-bold text-lg ml-2">Appearance</Text>
@@ -74,20 +77,20 @@ export default function SettingsScreen() {
           <View className="flex-row">
             <Pressable
               onPress={() => setColorScheme?.('light')}
-              className={`flex-1 mr-2 py-3 rounded-2xl border ${!isDark ? 'bg-emerald-600 border-emerald-600' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700'}`}
+              className={`flex-1 mr-2 py-3 rounded-2xl border ${!isDark ? 'bg-emerald-600 border-emerald-600' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700'}`}
             >
               <Text className={`text-center font-bold ${!isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>Light</Text>
             </Pressable>
             <Pressable
               onPress={() => setColorScheme?.('dark')}
-              className={`flex-1 ml-2 py-3 rounded-2xl border ${isDark ? 'bg-emerald-600 border-emerald-600' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700'}`}
+              className={`flex-1 ml-2 py-3 rounded-2xl border ${isDark ? 'bg-emerald-600 border-emerald-600' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700'}`}
             >
               <Text className={`text-center font-bold ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>Dark</Text>
             </Pressable>
           </View>
         </View>
 
-        <View className="rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 mb-4">
+        <View className="rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 mb-4 shadow-sm">
           <View className="flex-row items-center mb-3">
             <UserRoundCog size={18} color="#10b981" />
             <Text className="text-gray-900 dark:text-white font-bold text-lg ml-2">Account Role</Text>
@@ -110,7 +113,7 @@ export default function SettingsScreen() {
           {savingRole ? <Text className="text-xs text-gray-500 dark:text-gray-400 mt-2">Saving role...</Text> : null}
         </View>
 
-        <View className="rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 p-5">
+        <View className="rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
           <View className="flex-row items-center mb-3">
             <MoonStar size={18} color="#8b5cf6" />
             <Text className="text-gray-900 dark:text-white font-bold text-lg ml-2">Environment</Text>

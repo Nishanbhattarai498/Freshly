@@ -309,7 +309,7 @@ export default function Home() {
             <View className="p-5">
               <View className="flex-row justify-between items-start">
                 <View className="flex-1 pr-3">
-                  <Text className="text-xs font-semibold uppercase tracking-[3px] text-emerald-700 dark:text-emerald-300">ShelfLife</Text>
+                  <Text className="text-xs font-semibold uppercase tracking-[3px] text-emerald-700 dark:text-emerald-300">Freshly</Text>
                   <Text className="text-3xl font-black text-gray-900 dark:text-white mt-2 leading-9">Share. Claim. Waste less.</Text>
                   <Text className="text-gray-600 dark:text-gray-300 mt-3 leading-6">Local food stays local. Help it find a home.</Text>
                 </View>

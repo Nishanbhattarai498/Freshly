@@ -335,7 +335,7 @@ export default function Profile() {
           label="Help & Support" 
           onPress={() => {
             const email = 'nishanbhattarai1234567@gmail.com';
-            const subject = 'Help & Support - ShelfLife';
+            const subject = 'Help & Support - Freshly';
             const body = 'Hi, I need help with...';
             const url = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             Linking.openURL(url).catch((err) => console.error('An error occurred', err));
@@ -358,7 +358,7 @@ export default function Profile() {
       </View>
       
       <View className="items-center mb-8">
-        <Text className="text-gray-400 text-xs">ShelfLife v1.0.0</Text>
+        <Text className="text-gray-400 text-xs">Freshly v1.0.0</Text>
       </View>
     </ScrollView>
   );

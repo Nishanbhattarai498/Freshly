@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { Bell, CheckCheck, MessageCircle, ShieldCheck } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../services/api';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -78,19 +79,24 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-950 px-5 pt-14">
-      <View className="flex-row items-center justify-between mb-5">
-        <View>
-          <Text className="text-3xl font-black text-gray-900 dark:text-white">Notifications</Text>
-          <Text className="text-sm text-gray-600 dark:text-gray-300 mt-1">{unreadCount} unread updates</Text>
+    <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+      <LinearGradient
+        colors={isDark ? ['#0f172a', '#064e3b'] : ['#dbeafe', '#dcfce7']}
+        className="px-5 pt-14 pb-6 rounded-b-[26px]"
+      >
+        <View className="flex-row items-center justify-between">
+          <View>
+            <Text className="text-3xl font-black text-gray-900 dark:text-white">Notifications</Text>
+            <Text className="text-sm text-gray-600 dark:text-gray-300 mt-1">{unreadCount} unread updates</Text>
+          </View>
+          <Pressable
+            onPress={markAllRead}
+            className="px-3 py-2 rounded-full border border-emerald-200 dark:border-emerald-700 bg-white/70 dark:bg-slate-900/60"
+          >
+            <Text className="text-emerald-700 dark:text-emerald-200 text-xs font-bold">{markingAll ? '...' : 'Mark all read'}</Text>
+          </Pressable>
         </View>
-        <Pressable
-          onPress={markAllRead}
-          className="px-3 py-2 rounded-full border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30"
-        >
-          <Text className="text-emerald-700 dark:text-emerald-200 text-xs font-bold">{markingAll ? '...' : 'Mark all read'}</Text>
-        </Pressable>
-      </View>
+      </LinearGradient>
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
@@ -100,7 +106,7 @@ export default function NotificationsScreen() {
         <FlatList
           data={items}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
           ListEmptyComponent={
             <View className="items-center mt-24">
               <Bell size={46} color={isDark ? '#64748b' : '#94a3b8'} />

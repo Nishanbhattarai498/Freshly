@@ -137,3 +137,31 @@ Fix:
 - Check uptime quickly: `GET /health`
 - Verify model path loaded: inspect `model_path` in `GET /health`
 - Validate predictions: `POST /predict` with sample payload
+
+## 9) Prevent Free-Tier Sleep (Recommended)
+
+If your Render services sleep after inactivity (typically ~15 minutes), use a keepalive job every 10 minutes.
+
+This repository now includes:
+
+- `.github/workflows/render-keepalive.yml`
+
+It pings:
+
+- `https://freshly-backend.onrender.com/health`
+- `https://freshly-backend.onrender.com/api/ml/status`
+- `https://freshly-ml.onrender.com/health`
+
+### Why this helps
+
+- Keeps both backend and ML services warm.
+- Reduces 502/timeout spikes caused by cold starts.
+- Avoids forcing redeploy/restart loops.
+
+### If your Render URLs are different
+
+Edit `.github/workflows/render-keepalive.yml` and replace the 3 URL values under `env`.
+
+### Important note
+
+Free-tier cold starts can still occur occasionally. For stable real-time chat + ML API latency, prefer paid "always on" instances.
