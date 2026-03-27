@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { Home, PlusCircle, User, MessageCircle, FlaskConical } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { useColorScheme } from 'nativewind';
-import { View, StyleSheet, Pressable, GestureResponderEvent, ColorValue } from 'react-native';
+import { View, StyleSheet, Pressable, GestureResponderEvent, ColorValue, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ export default function TabLayout() {
         activeGlow: 'rgba(16,185,129,0.3)',
         activeLight: 'rgba(16,185,129,0.15)',
         inactive: isDark ? '#6b7280' : '#9ca3af',
+        inactiveText: isDark ? '#94a3b8' : '#64748b',
         bg,
         border: isDark ? 'rgba(100,116,139,0.2)' : 'rgba(15,23,42,0.08)',
         pill: isDark ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.1)',
@@ -38,9 +39,10 @@ export default function TabLayout() {
     Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
     focused: boolean;
     color: string;
+    label: string;
   };
 
-  const TabIcon = ({ Icon, focused, color }: TabIconProps) => {
+  const TabIcon = ({ Icon, focused, color, label }: TabIconProps) => {
     const animatedPill = useAnimatedStyle(() => ({
       transform: [{ scale: withSpring(focused ? 1 : 0.8, { damping: 13, stiffness: 140 }) }],
       opacity: withTiming(focused ? 1 : 0, { duration: 200 }),
@@ -48,16 +50,31 @@ export default function TabLayout() {
 
     const animatedIcon = useAnimatedStyle(() => ({
       transform: [
-        { scale: withSpring(focused ? 1.12 : 1, { damping: 12, stiffness: 155 }) },
-        { translateY: withSpring(focused ? -2 : 0, { damping: 12 }) },
+        { scale: withSpring(focused ? 1.08 : 1, { damping: 12, stiffness: 155 }) },
+        { translateY: withSpring(focused ? -1.5 : 0, { damping: 12 }) },
       ],
+    }));
+
+    const animatedLabel = useAnimatedStyle(() => ({
+      opacity: withTiming(focused ? 1 : 0.9, { duration: 180 }),
+      transform: [{ scale: withSpring(focused ? 1 : 0.96, { damping: 14, stiffness: 140 }) }],
     }));
 
     return (
       <View style={styles.iconWrapper}>
         <Animated.View style={[styles.activePill, { backgroundColor: theme.pill }, animatedPill]} />
-        <Animated.View style={animatedIcon}>
-          <Icon size={22} color={color} strokeWidth={focused ? 2.3 : 1.9} />
+        <Animated.View style={[styles.iconColumn, animatedIcon]}>
+          <Icon size={20} color={color} strokeWidth={focused ? 2.3 : 1.9} />
+          <Animated.Text
+            style={[
+              styles.tabLabel,
+              { color: focused ? theme.text : theme.inactiveText, fontWeight: focused ? '800' : '700' },
+              animatedLabel,
+            ]}
+            numberOfLines={1}
+          >
+            {label}
+          </Animated.Text>
         </Animated.View>
 
         {focused && (
@@ -73,9 +90,9 @@ export default function TabLayout() {
     const animatedStyle = useAnimatedStyle(() => ({
       transform: [
         { scale: withSpring(focused ? 1.08 : 1, { damping: 11, stiffness: 145 }) },
-        { translateY: withSpring(focused ? -4 : 0, { damping: 12 }) },
+        { translateY: withSpring(focused ? -4 : -1, { damping: 12 }) },
       ],
-      opacity: withTiming(focused ? 1 : 0.9, { duration: 180 }),
+      opacity: withTiming(focused ? 1 : 0.95, { duration: 180 }),
     }));
 
     const pulseStyle = useAnimatedStyle(() => ({
@@ -97,8 +114,17 @@ export default function TabLayout() {
             animatedStyle,
           ]}
         >
-          <PlusCircle size={28} color="#ffffff" strokeWidth={2.3} />
+          <PlusCircle size={26} color="#ffffff" strokeWidth={2.3} />
         </Animated.View>
+      </View>
+    );
+  };
+
+  const FabLabel = ({ focused }: { focused: boolean }) => {
+    return (
+      <View style={styles.fabLabelWrap}>
+        <FabIcon focused={focused} />
+        <Text style={[styles.tabLabel, { color: focused ? theme.text : theme.inactiveText, fontWeight: focused ? '800' : '700' }]}>Post</Text>
       </View>
     );
   };
@@ -150,7 +176,7 @@ export default function TabLayout() {
           right: 0,
           marginHorizontal: 18,
           bottom: Math.max(0, insets.bottom),
-          height: 62,
+          height: 74,
           borderRadius: 22,
           backgroundColor: 'transparent',
           borderWidth: 0,
@@ -184,35 +210,35 @@ export default function TabLayout() {
         name="home"
         options={{
           title: 'Feed',
-          tabBarIcon: ({ color, focused }) => <TabIcon Icon={Home} focused={focused} color={color} />, 
+          tabBarIcon: ({ color, focused }) => <TabIcon Icon={Home} focused={focused} color={color} label="Home" />,
         }}
       />
       <Tabs.Screen
         name="messages"
         options={{
           title: 'Messages',
-          tabBarIcon: ({ color, focused }) => <TabIcon Icon={MessageCircle} focused={focused} color={color} />, 
+          tabBarIcon: ({ color, focused }) => <TabIcon Icon={MessageCircle} focused={focused} color={color} label="Chats" />,
         }}
       />
       <Tabs.Screen
         name="predict"
         options={{
           title: 'Predict',
-          tabBarIcon: ({ color, focused }) => <TabIcon Icon={FlaskConical} focused={focused} color={color} />, 
+          tabBarIcon: ({ color, focused }) => <TabIcon Icon={FlaskConical} focused={focused} color={color} label="Predict" />,
         }}
       />
       <Tabs.Screen
         name="post"
         options={{
           title: 'Create',
-          tabBarIcon: ({ focused }) => <FabIcon focused={focused} />,
+          tabBarIcon: ({ focused }) => <FabLabel focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, focused }) => <TabIcon Icon={User} focused={focused} color={color} />, 
+          tabBarIcon: ({ color, focused }) => <TabIcon Icon={User} focused={focused} color={color} label="You" />,
         }}
       />
     </Tabs>
@@ -223,20 +249,29 @@ const styles = StyleSheet.create({
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 50,
-    height: 50,
+    width: 58,
+    height: 58,
     position: 'relative',
+  },
+  iconColumn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLabel: {
+    marginTop: 4,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
   activePill: {
     position: 'absolute',
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 54,
+    height: 54,
+    borderRadius: 18,
     zIndex: -1,
   },
   indicator: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 2,
     width: 5,
     height: 5,
     borderRadius: 2.5,
@@ -247,9 +282,9 @@ const styles = StyleSheet.create({
     borderRadius: 2.5,
   },
   fab: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOffset: { width: 0, height: 8 },
@@ -259,17 +294,23 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   fabWrapper: {
-    width: 52,
-    height: 52,
+    width: 50,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
-  fabPulse: {
-    position: 'absolute',
+  fabLabelWrap: {
     width: 58,
     height: 58,
-    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabPulse: {
+    position: 'absolute',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     zIndex: 0,
   },
 });

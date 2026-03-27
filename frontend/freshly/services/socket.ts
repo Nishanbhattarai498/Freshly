@@ -39,8 +39,16 @@ const resolveSocketUrl = (): string => {
 
 const SOCKET_URL = resolveSocketUrl();
 let socket: FreshlySocket | null = null;
+let socketUserId: string | null = null;
 
 export const connectSocket = (userId: string): FreshlySocket => {
+	if (socket && socketUserId !== userId) {
+		socket.removeAllListeners();
+		socket.disconnect();
+		socket = null;
+		socketUserId = null;
+	}
+
 	if (socket?.connected) return socket;
 
 	socket = io(SOCKET_URL, {
@@ -50,6 +58,7 @@ export const connectSocket = (userId: string): FreshlySocket => {
 		reconnection: true,
 		reconnectionAttempts: 10,
 	});
+	socketUserId = userId;
 
 	socket.on('connect', () => {
 		console.log('Socket connected');
@@ -63,13 +72,19 @@ export const connectSocket = (userId: string): FreshlySocket => {
 		console.error('Socket error:', error);
 	});
 
+	socket.on('connect_error', (error) => {
+		console.error('Socket connect error:', error?.message || error);
+	});
+
 	return socket;
 };
 
 export const disconnectSocket = (): void => {
 	if (!socket) return;
+	socket.removeAllListeners();
 	socket.disconnect();
 	socket = null;
+	socketUserId = null;
 };
 
 export const getSocket = (): FreshlySocket | null => socket;

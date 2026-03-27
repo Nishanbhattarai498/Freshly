@@ -29,6 +29,20 @@ type StatBadgeProps = {
   children: React.ReactNode;
 };
 
+const safeRelativeDate = (value?: string) => {
+  if (!value) return 'Unknown time';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown time';
+  return formatDistanceToNow(date, { addSuffix: true });
+};
+
+const safeFormattedDate = (value?: string) => {
+  if (!value) return 'Unknown';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return format(date, 'MMM d, yyyy');
+};
+
 export default function Home() {
   const [items, setItems] = React.useState<Item[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -166,11 +180,14 @@ export default function Home() {
     return <Text className="text-emerald-50 text-sm font-bold bg-black/60 px-3 py-1 rounded-full">Free</Text>;
   };
 
-  const CardMeta = ({ item, isDark }: CardMetaProps) => (
+  const CardMeta = ({ item, isDark }: CardMetaProps) => {
+    const user = item.user || { displayName: 'Unknown User', avatarUrl: '' };
+
+    return (
     <View className="flex-row items-center justify-between mt-3">
       <View className="flex-row items-center">
         <Image
-          source={{ uri: item.user.avatarUrl || 'https://via.placeholder.com/40' }}
+          source={{ uri: user.avatarUrl || 'https://via.placeholder.com/40' }}
           className="w-9 h-9 rounded-full mr-2"
           style={{ borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(15,23,42,0.08)' }}
         />
@@ -180,13 +197,13 @@ export default function Home() {
             style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
             numberOfLines={1}
           >
-            {item.user.displayName}
+            {user.displayName || 'Unknown User'}
           </Text>
           <Text
             className="text-[11px]"
             style={{ color: isDark ? 'rgba(248,250,252,0.8)' : '#4b5563' }}
           >
-            {formatDistanceToNow(new Date(item.expiryDate), { addSuffix: true })}
+            {safeRelativeDate(item.expiryDate)}
           </Text>
         </View>
       </View>
@@ -204,7 +221,8 @@ export default function Home() {
         </Text>
       </View>
     </View>
-  );
+    );
+  };
 
   const StatBadge = ({ children }: StatBadgeProps) => (
     <View className="bg-emerald-600/90 px-3 py-1 rounded-full border border-emerald-500/70 shadow-sm">
@@ -269,7 +287,7 @@ export default function Home() {
         <View className="flex-row items-center mt-2">
           <Calendar size={14} color={colorScheme === 'dark' ? '#a5b4fc' : '#1d4ed8'} />
           <Text className="text-gray-800 dark:text-gray-100 text-sm ml-2">
-            Expires {format(new Date(item.expiryDate), 'MMM d, yyyy')}
+            Expires {safeFormattedDate(item.expiryDate)}
           </Text>
         </View>
 

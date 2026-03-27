@@ -1,22 +1,131 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { Trophy, Flame, PackageOpen, HandHeart } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { api } from '../services/api';
+
+type Leader = {
+  position: number;
+  userId: string;
+  displayName: string;
+  avatarUrl?: string;
+  count: number;
+};
+
+type AchievementsPayload = {
+  stats: {
+    shared: number;
+    claimed: number;
+    streak: {
+      current: number;
+      best: number;
+      lastActive?: string | null;
+    };
+  };
+  rank: {
+    shared: number | null;
+    claimed: number | null;
+  };
+  leaderboard: {
+    sharers: Leader[];
+    claimers: Leader[];
+  };
+};
 
 export default function AchievementsScreen() {
-  const router = useRouter();
+  const [data, setData] = useState<AchievementsPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/users/achievements');
+        setData(response.data as AchievementsPayload);
+      } catch {
+        setData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+  }, []);
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-950">
+        <ActivityIndicator color="#10b981" />
+      </View>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-950 px-6 pt-16">
-      <Text className="text-3xl font-black text-gray-900 dark:text-white">Achievements</Text>
-      <Text className="mt-3 text-gray-600 dark:text-gray-300 leading-6">
-        Detailed achievement breakdown is coming soon. Your core rank and streak stats are visible on the Profile tab.
-      </Text>
-      <TouchableOpacity
-        onPress={() => router.back()}
-        className="mt-8 px-5 py-3 rounded-2xl bg-emerald-600 self-start"
+    <ScrollView className="flex-1 bg-white dark:bg-gray-950" contentContainerStyle={{ paddingBottom: 120 }}>
+      <LinearGradient
+        colors={['#0ea5e9', '#10b981']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="px-6 pt-14 pb-9 rounded-b-[30px]"
       >
-        <Text className="text-white font-semibold">Go Back</Text>
-      </TouchableOpacity>
-    </View>
+        <Text className="text-white/85 text-xs font-bold tracking-[2px] uppercase">Progress Board</Text>
+        <Text className="text-white text-3xl font-black mt-2">Achievements</Text>
+        <Text className="text-white/85 mt-2">Keep sharing and claiming to rise in the leaderboard.</Text>
+      </LinearGradient>
+
+      <View className="px-6 mt-6">
+        <View className="rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5">
+          <View className="flex-row justify-between">
+            <View className="items-center flex-1">
+              <Flame size={20} color="#ef4444" />
+              <Text className="text-lg font-black text-gray-900 dark:text-white mt-1">{data?.stats.streak.current ?? 0}d</Text>
+              <Text className="text-xs text-gray-500 dark:text-gray-400">Current streak</Text>
+            </View>
+            <View className="items-center flex-1">
+              <PackageOpen size={20} color="#10b981" />
+              <Text className="text-lg font-black text-gray-900 dark:text-white mt-1">{data?.stats.shared ?? 0}</Text>
+              <Text className="text-xs text-gray-500 dark:text-gray-400">Shared</Text>
+            </View>
+            <View className="items-center flex-1">
+              <HandHeart size={20} color="#f59e0b" />
+              <Text className="text-lg font-black text-gray-900 dark:text-white mt-1">{data?.stats.claimed ?? 0}</Text>
+              <Text className="text-xs text-gray-500 dark:text-gray-400">Claimed</Text>
+            </View>
+          </View>
+        </View>
+
+        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5">
+          <Text className="text-lg font-bold text-gray-900 dark:text-white">Your Rank</Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-400 mt-2">Sharing: {data?.rank.shared ? `#${data.rank.shared}` : 'Not ranked yet'}</Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-400">Claiming: {data?.rank.claimed ? `#${data.rank.claimed}` : 'Not ranked yet'}</Text>
+        </View>
+
+        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5">
+          <View className="flex-row items-center mb-3">
+            <Trophy size={18} color="#eab308" />
+            <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">Top Sharers</Text>
+          </View>
+          {(data?.leaderboard.sharers || []).slice(0, 5).map((user) => (
+            <View key={`sharer-${user.userId}`} className="py-2 border-b border-gray-100 dark:border-gray-800 flex-row justify-between">
+              <Text className="text-gray-900 dark:text-white font-semibold">#{user.position} {user.displayName}</Text>
+              <Text className="text-emerald-700 dark:text-emerald-200 font-bold">{user.count}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5">
+          <View className="flex-row items-center mb-3">
+            <Trophy size={18} color="#eab308" />
+            <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">Top Claimers</Text>
+          </View>
+          {(data?.leaderboard.claimers || []).slice(0, 5).map((user) => (
+            <View key={`claimer-${user.userId}`} className="py-2 border-b border-gray-100 dark:border-gray-800 flex-row justify-between">
+              <Text className="text-gray-900 dark:text-white font-semibold">#{user.position} {user.displayName}</Text>
+              <Text className="text-amber-700 dark:text-amber-200 font-bold">{user.count}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </ScrollView>
   );
 }

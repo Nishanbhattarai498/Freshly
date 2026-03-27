@@ -17,6 +17,20 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return err?.response?.data?.error || err?.message || fallback;
 };
 
+const safeFormatDate = (value?: string) => {
+  if (!value) return 'Unknown date';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown date';
+  return format(date, 'MMM dd, yyyy');
+};
+
+const safeRelativeDate = (value?: string) => {
+  if (!value) return 'Unknown time';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown time';
+  return formatDistanceToNow(date, { addSuffix: true });
+};
+
 export default function ItemDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -47,6 +61,10 @@ export default function ItemDetail() {
     try {
       setClaiming(true);
       const token = await getToken();
+      if (!token) {
+        Alert.alert('Login required', 'Please login again to claim this item.');
+        return;
+      }
       await api.post(`/items/${id}/claim`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -63,7 +81,17 @@ export default function ItemDetail() {
   const handleMessageUser = async () => {
     try {
       const token = await getToken();
+      if (!token) {
+        Alert.alert('Login required', 'Please login again to start a conversation.');
+        return;
+      }
+
       const receiverId = item?.userId || item?.user?.id;
+      if (!receiverId) {
+        Alert.alert('Unavailable', 'This listing is missing owner information.');
+        return;
+      }
+
       const response = await api.post('/messages/start', { receiverId }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -187,7 +215,7 @@ export default function ItemDetail() {
             <View style={{ marginLeft: 12 }}>
               <Text style={{ color: '#6b7280', fontSize: 12 }}>Expires</Text>
               <Text style={{ fontWeight: '600', fontSize: 16, color: '#ef4444' }}>
-                {format(new Date(item.expiryDate), 'MMM dd, yyyy')} ({formatDistanceToNow(new Date(item.expiryDate), { addSuffix: true })})
+                {safeFormatDate(item.expiryDate)} ({safeRelativeDate(item.expiryDate)})
               </Text>
             </View>
           </View>

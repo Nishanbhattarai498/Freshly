@@ -28,7 +28,7 @@ const getErrorMessage = (e: unknown, fallback: string) => {
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams();
   const conversationId = useMemo(() => Number(id), [id]);
-  const { getToken, userId } = useAuth();
+  const { getToken, userId, isLoaded } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -37,17 +37,43 @@ export default function ConversationScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   const loadConversation = useCallback(async () => {
+    if (!isLoaded) {
+      setLoading(true);
+      return;
+    }
+
     if (!conversationId || Number.isNaN(conversationId)) {
       setError('Invalid conversation id.');
       setLoading(false);
       return;
     }
 
+    if (!userId) {
+      setError('Login required to view this conversation.');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+    let settled = false;
+    const loadingGuard = setTimeout(() => {
+      if (!settled) {
+        setError('Chat is taking too long to load. Please retry.');
+        setLoading(false);
+      }
+    }, 14000);
+
     try {
       const token = await getToken();
+      if (!token) {
+        setError('Session unavailable. Please login again.');
+        setLoading(false);
+        return;
+      }
+
       const response = await api.get(`/messages/${conversationId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        timeout: 12000,
+        headers: { Authorization: `Bearer ${token}` },
       });
       const nextMessages = Array.isArray(response?.data?.messages) ? (response.data.messages as ChatMessage[]) : [];
       setMessages(nextMessages.reverse());
@@ -55,13 +81,26 @@ export default function ConversationScreen() {
     } catch (e) {
       setError(getErrorMessage(e, 'Failed to load conversation'));
     } finally {
+      settled = true;
+      clearTimeout(loadingGuard);
       setLoading(false);
     }
-  }, [conversationId, getToken]);
+  }, [conversationId, getToken, isLoaded, userId]);
 
   useEffect(() => {
     loadConversation();
   }, [loadConversation]);
+
+  useEffect(() => {
+    if (isLoaded) return;
+
+    const authGuard = setTimeout(() => {
+      setError('Authentication is still loading. Please reopen the chat.');
+      setLoading(false);
+    }, 12000);
+
+    return () => clearTimeout(authGuard);
+  }, [isLoaded]);
 
   useEffect(() => {
     if (!userId || !conversationId || Number.isNaN(conversationId)) return;
@@ -105,10 +144,15 @@ export default function ConversationScreen() {
     setSending(true);
     try {
       const token = await getToken();
+      if (!token) {
+        setError('Session unavailable. Please login again.');
+        return;
+      }
+
       const response = await api.post(
         `/messages/${conversationId}/messages`,
         { content, type: 'TEXT' },
-        { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
+        { timeout: 12000, headers: { Authorization: `Bearer ${token}` } }
       );
       setMessages((prev) => [...prev, response.data as ChatMessage]);
       setInput('');
@@ -124,6 +168,7 @@ export default function ConversationScreen() {
     return (
       <View className="flex-1 justify-center items-center bg-white dark:bg-gray-950">
         <ActivityIndicator size="large" color="#10b981" />
+        <Text className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading chat...</Text>
       </View>
     );
   }
@@ -136,6 +181,11 @@ export default function ConversationScreen() {
       <View className="px-4 pt-14 pb-3 border-b border-gray-200 dark:border-gray-800">
         <Text className="text-xl font-bold text-gray-900 dark:text-white">Conversation #{conversationId}</Text>
         {error ? <Text className="text-rose-600 mt-1">{error}</Text> : null}
+        {error ? (
+          <TouchableOpacity onPress={loadConversation} className="mt-2 self-start px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800">
+            <Text className="text-xs font-semibold text-gray-700 dark:text-gray-200">Retry</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <FlatList

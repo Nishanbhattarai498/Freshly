@@ -117,10 +117,10 @@ router.get('/:id', async(req,res) =>{
     }   
     // select all ratings from the posted shopkeeper // 
 
-    const sellerRatings=  await db 
-    .select()
-    .from(ratings)
-    .where(eq(ratings.ratedUserId,items.userId))
+    const sellerRatings = await db
+      .select()
+      .from(ratings)
+      .where(eq(ratings.ratedUserId, item.userId));
 
    //yedi shopkeeper sanga rating xa bhaney existing  average rating + ayeko rating 
 

@@ -11,9 +11,16 @@ import { connectSocket } from '../../services/socket';
 import { useMessages } from '../../contexts/MessagesContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
+const safeRelativeDate = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return formatDistanceToNow(date, { addSuffix: true });
+};
+
 export default function MessagesTab() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isLoaded, isSignedIn } = useUser();
   const { colorScheme } = useColorScheme();
   const { state, fetchConversations } = useMessages();
   const [loading, setLoading] = useState(true);
@@ -29,21 +36,41 @@ export default function MessagesTab() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!isLoaded) {
+        setLoading(true);
+        return () => undefined;
+      }
+
+      if (!isSignedIn || !user?.id) {
+        setLoading(false);
+        setSocketConnected(false);
+        return () => undefined;
+      }
+
       const hasExisting = conversations.length > 0;
       if (!hasExisting) setLoading(true);
 
+      let fetchSettled = false;
+      const loadingGuard = setTimeout(() => {
+        if (!fetchSettled) {
+          setLoading(false);
+        }
+      }, 13000);
+
       fetchConversations()
         .catch(() => undefined)
-        .finally(() => setLoading(false));
+        .finally(() => {
+          fetchSettled = true;
+          clearTimeout(loadingGuard);
+          setLoading(false);
+        });
 
       let socket = null;
-      if (user?.id) {
-        socket = connectSocket(user.id);
-        setSocketConnected(Boolean(socket?.connected));
+      socket = connectSocket(user.id);
+      setSocketConnected(Boolean(socket?.connected));
 
-        socket.on('connect', () => setSocketConnected(true));
-        socket.on('disconnect', () => setSocketConnected(false));
-      }
+      socket.on('connect', () => setSocketConnected(true));
+      socket.on('disconnect', () => setSocketConnected(false));
 
       // polling fallback in case socket is not available
       const poll = setInterval(() => {
@@ -55,16 +82,17 @@ export default function MessagesTab() {
           socket.off('connect');
           socket.off('disconnect');
         }
+        clearTimeout(loadingGuard);
         clearInterval(poll);
       };
-    }, [fetchConversations, user?.id, conversations.length])
+    }, [fetchConversations, user?.id, conversations.length, isLoaded, isSignedIn])
   );
 
   // Provider already registers global socket listeners. No-op here.
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchConversations();
+    await fetchConversations().catch(() => undefined);
     setRefreshing(false);
   };
 
@@ -103,6 +131,21 @@ export default function MessagesTab() {
     return (
       <View className="flex-1 justify-center items-center bg-white dark:bg-gray-900">
         <ActivityIndicator size="large" color="#22c55e" />
+      </View>
+    );
+  }
+
+  if (isLoaded && !isSignedIn) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-950 px-6">
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white">Login required</Text>
+        <Text className="text-sm text-gray-600 dark:text-gray-300 mt-2 text-center">Sign in to view your conversations.</Text>
+        <TouchableOpacity
+          onPress={() => router.replace('/(auth)/login')}
+          className="mt-5 px-5 py-3 rounded-2xl bg-emerald-600"
+        >
+          <Text className="text-white font-bold">Go to Login</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -159,7 +202,8 @@ export default function MessagesTab() {
           </View>
         }
         renderItem={({ item }) => {
-          const otherUser = item.participant1Id === user?.id ? item.participant2 : item.participant1;
+          const candidateUser = item.participant1Id === user?.id ? item.participant2 : item.participant1;
+          const otherUser = candidateUser || { displayName: 'Unknown User', avatarUrl: '' };
           const lastMessage = item.messages[0];
           const isPending = item.status === 'PENDING';
           const isReceiver = item.participant2Id === user?.id;
@@ -182,17 +226,19 @@ export default function MessagesTab() {
                   <Text className={`text-base ${isUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-semibold text-gray-800 dark:text-gray-200'}`} numberOfLines={1}>
                     {otherUser.displayName}
                   </Text>
-                  {lastMessage && (
+                  {lastMessage && safeRelativeDate(lastMessage.createdAt) ? (
                     <Text className={`text-[11px] ${isUnread ? 'text-emerald-600 font-bold' : 'text-gray-400'}`}>
-                      {formatDistanceToNow(new Date(lastMessage.createdAt), { addSuffix: true })}
+                      {safeRelativeDate(lastMessage.createdAt)}
                     </Text>
-                  )}
+                  ) : null}
                 </View>
                 <Text
                   className={`text-sm ${isUnread ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-600 dark:text-gray-400'}`}
                   numberOfLines={1}
                 >
-                  {lastMessage ? `${lastMessage.senderName || (lastMessage.senderId === user?.id ? 'You' : otherUser.displayName)}: ${lastMessage.content}` : 'Start chatting...'}
+                  {lastMessage
+                    ? `${lastMessage.senderName || (lastMessage.senderId === user?.id ? 'You' : otherUser.displayName)}: ${lastMessage.content || 'Media message'}`
+                    : 'Start chatting...'}
                 </Text>
                 {isPending && isReceiver && (
                   <Text className="text-[11px] text-emerald-600 font-semibold mt-1">Pending</Text>

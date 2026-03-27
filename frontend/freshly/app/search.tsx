@@ -1,22 +1,190 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Search, UserRound, Package2, Sparkles } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
+import { LinearGradient } from 'expo-linear-gradient';
+import { api } from '../services/api';
+import { useUser } from '@clerk/clerk-expo';
+import type { Item } from '../store';
+
+type FoundUser = {
+  id: string;
+  displayName?: string;
+  email?: string;
+  avatarUrl?: string;
+  role?: 'SHOPKEEPER' | 'CUSTOMER';
+};
+
+const getSearchText = (item: Item) => {
+  return [item.title, item.description, item.category, item.location?.address, item.user?.displayName]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+};
 
 export default function SearchScreen() {
   const router = useRouter();
+  const { colorScheme } = useColorScheme();
+  const { user } = useUser();
+  const isDark = colorScheme === 'dark';
+
+  const [query, setQuery] = useState('');
+  const [mode, setMode] = useState<'items' | 'people'>('items');
+  const [items, setItems] = useState<Item[]>([]);
+  const [users, setUsers] = useState<FoundUser[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const fetchItems = useCallback(async () => {
+    setLoadingItems(true);
+    try {
+      const response = await api.get('/items');
+      setItems(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoadingItems(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (mode !== 'people') return;
+    if (q.length < 2) {
+      setUsers([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoadingUsers(true);
+      try {
+        const response = await api.get('/users/search', { params: { q } });
+        const nextUsers = Array.isArray(response.data) ? response.data as FoundUser[] : [];
+        setUsers(nextUsers.filter((u) => u.id !== user?.id));
+      } catch {
+        setUsers([]);
+      } finally {
+        setLoadingUsers(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [mode, query, user?.id]);
+
+  const filteredItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((item) => getSearchText(item).includes(q));
+  }, [items, query]);
+
+  const startConversation = async (receiverId: string) => {
+    try {
+      const response = await api.post('/messages/start', { receiverId });
+      router.push(`/messages/${response.data.id}`);
+    } catch {
+      // No-op; keeping UX stable even when messaging endpoint is unavailable.
+    }
+  };
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-950 px-6 pt-16">
-      <Text className="text-3xl font-black text-gray-900 dark:text-white">Search</Text>
-      <Text className="mt-3 text-gray-600 dark:text-gray-300 leading-6">
-        Search is temporarily unavailable in this build. Use category filters on Home to browse nearby items.
-      </Text>
-      <TouchableOpacity
-        onPress={() => router.back()}
-        className="mt-8 px-5 py-3 rounded-2xl bg-emerald-600 self-start"
+    <View className="flex-1 bg-white dark:bg-gray-950">
+      <LinearGradient
+        colors={isDark ? ['#0f172a', '#142032'] : ['#e0f2fe', '#dcfce7']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="px-6 pt-14 pb-8 rounded-b-[28px]"
       >
-        <Text className="text-white font-semibold">Go Back</Text>
-      </TouchableOpacity>
+        <Text className="text-3xl font-black text-gray-900 dark:text-white">Discover Nearby</Text>
+        <Text className="text-sm text-gray-700 dark:text-gray-200 mt-2">Search food listings and connect with people quickly.</Text>
+
+        <View className="mt-5 flex-row items-center bg-white/85 dark:bg-slate-900/80 border border-white/30 dark:border-slate-700 rounded-2xl px-4 py-3">
+          <Search size={18} color={isDark ? '#cbd5e1' : '#0f172a'} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={mode === 'items' ? 'Search items, categories, locations...' : 'Search people by name or email...'}
+            placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+            className="flex-1 ml-3 text-[15px] text-gray-900 dark:text-white"
+          />
+        </View>
+
+        <View className="mt-4 flex-row">
+          <Pressable
+            onPress={() => setMode('items')}
+            className={`mr-2 px-4 py-2 rounded-full border ${mode === 'items' ? 'bg-emerald-600 border-emerald-600' : 'bg-white/70 dark:bg-slate-900/70 border-slate-300 dark:border-slate-700'}`}
+          >
+            <Text className={`font-semibold ${mode === 'items' ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>Items</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setMode('people')}
+            className={`px-4 py-2 rounded-full border ${mode === 'people' ? 'bg-emerald-600 border-emerald-600' : 'bg-white/70 dark:bg-slate-900/70 border-slate-300 dark:border-slate-700'}`}
+          >
+            <Text className={`font-semibold ${mode === 'people' ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>People</Text>
+          </Pressable>
+        </View>
+      </LinearGradient>
+
+      {mode === 'items' ? (
+        <FlatList
+          data={filteredItems}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
+          ListEmptyComponent={
+            <View className="items-center mt-20">
+              {loadingItems ? <ActivityIndicator color="#10b981" /> : <Package2 size={42} color={isDark ? '#64748b' : '#94a3b8'} />}
+              <Text className="mt-3 text-gray-500 dark:text-gray-400">{loadingItems ? 'Loading items...' : 'No items match your search.'}</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => router.push(`/(item)/${item.id}`)}
+              className="mb-3 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900"
+            >
+              <View className="flex-row">
+                <Image source={{ uri: item.imageUrl || 'https://via.placeholder.com/120' }} className="w-24 h-24" />
+                <View className="flex-1 p-3">
+                  <Text className="font-extrabold text-gray-900 dark:text-white" numberOfLines={1}>{item.title}</Text>
+                  <Text className="text-xs text-gray-600 dark:text-gray-400 mt-1" numberOfLines={1}>{item.location?.address || 'Location unavailable'}</Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1" numberOfLines={2}>{item.description || 'No description'}</Text>
+                </View>
+              </View>
+            </Pressable>
+          )}
+        />
+      ) : (
+        <FlatList
+          data={users}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
+          ListEmptyComponent={
+            <View className="items-center mt-20">
+              {loadingUsers ? <ActivityIndicator color="#10b981" /> : <UserRound size={42} color={isDark ? '#64748b' : '#94a3b8'} />}
+              <Text className="mt-3 text-gray-500 dark:text-gray-400">{loadingUsers ? 'Searching people...' : 'Type at least 2 characters to find people.'}</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => startConversation(item.id)}
+              className="mb-3 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 flex-row items-center"
+            >
+              <Image source={{ uri: item.avatarUrl || 'https://via.placeholder.com/80' }} className="w-12 h-12 rounded-full" />
+              <View className="flex-1 ml-3">
+                <Text className="font-bold text-gray-900 dark:text-white" numberOfLines={1}>{item.displayName || 'Unknown user'}</Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400" numberOfLines={1}>{item.email || 'No email'}</Text>
+              </View>
+              <View className="flex-row items-center px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                <Sparkles size={13} color="#059669" />
+                <Text className="ml-1 text-emerald-700 dark:text-emerald-200 text-xs font-semibold">Message</Text>
+              </View>
+            </Pressable>
+          )}
+        />
+      )}
     </View>
   );
 }

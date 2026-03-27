@@ -62,8 +62,19 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
   const [unreadMap, setUnreadMap] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const { getToken, userId } = useAuth();
+  const { getToken, userId, isLoaded } = useAuth();
   const lastRealtimeRefreshRef = useRef(0);
+
+  const getTokenWithTimeout = useCallback(async (timeoutMs = 7000) => {
+    try {
+      return await Promise.race<string | null>([
+        getToken(),
+        new Promise<string | null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+      ]);
+    } catch {
+      return null;
+    }
+  }, [getToken]);
 
   const addMessage = useCallback((message: ConversationMessage) => {
     setMessages((prev) => [...prev, message]);
@@ -82,10 +93,18 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
   }, []);
 
   const fetchMessages = useCallback(async (conversationId: number) => {
+    if (!isLoaded || !userId) {
+      setMessages([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const token = await getToken();
+      const token = await getTokenWithTimeout();
       const response = await api.get(`/messages/${conversationId}`, {
+        timeout: 12000,
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       const nextMessages = Array.isArray(response?.data?.messages)
@@ -99,13 +118,22 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [getTokenWithTimeout, isLoaded, userId]);
 
   const fetchConversations = useCallback(async () => {
+    if (!isLoaded || !userId) {
+      setConversations([]);
+      setUnreadMap({});
+      setError(null);
+      setLoading(false);
+      return [] as Conversation[];
+    }
+
     setLoading(true);
     try {
-      const token = await getToken();
+      const token = await getTokenWithTimeout();
       const response = await api.get('/messages', {
+        timeout: 12000,
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       const nextConversations = Array.isArray(response?.data) ? (response.data as Conversation[]) : [];
@@ -127,7 +155,7 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
     } finally {
       setLoading(false);
     }
-  }, [getToken, userId]);
+  }, [getTokenWithTimeout, isLoaded, userId]);
 
   const refreshFromRealtime = useCallback(() => {
     const now = Date.now();
@@ -139,7 +167,7 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
   }, [fetchConversations]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!isLoaded || !userId) return;
 
     const socket = connectSocket(userId);
 
@@ -172,7 +200,7 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
       socket.off('new_message', onRealtimeUpdate);
       socket.off('conversation_started', onRealtimeUpdate);
     };
-  }, [userId, conversations, refreshFromRealtime]);
+  }, [isLoaded, userId, conversations, refreshFromRealtime]);
 
   const state: MessagesState = {
     conversations,
