@@ -5,20 +5,31 @@ import { useAuth } from '@clerk/clerk-expo';
 import { api } from '../../services/api';
 import { ChevronLeft, MapPin, Clock, Tag, MessageCircle, AlertTriangle } from 'lucide-react-native';
 import { formatDistanceToNow, format } from 'date-fns';
+import type { Item } from '../../store';
+
+type ItemDetailResponse = Item & {
+  userId: string;
+  claims?: { id: number }[];
+};
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const err = error as { response?: { data?: { error?: string } }; message?: string };
+  return err?.response?.data?.error || err?.message || fallback;
+};
 
 export default function ItemDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { getToken, userId } = useAuth();
   
-  const [item, setItem] = useState(null);
+  const [item, setItem] = useState<ItemDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
 
   const fetchItemDetails = useCallback(async () => {
     try {
       const response = await api.get(`/items/${id}`);
-      setItem(response.data);
+      setItem(response.data as ItemDetailResponse);
     } catch (error) {
       console.error('Error fetching item details:', error);
       Alert.alert('Error', 'Failed to load item details.');
@@ -43,7 +54,7 @@ export default function ItemDetail() {
       fetchItemDetails();
     } catch (error) {
       console.error('Claim error:', error);
-      Alert.alert('Error', error.response?.data?.error || 'Failed to claim item.');
+      Alert.alert('Error', getErrorMessage(error, 'Failed to claim item.'));
     } finally {
       setClaiming(false);
     }
@@ -52,7 +63,8 @@ export default function ItemDetail() {
   const handleMessageUser = async () => {
     try {
       const token = await getToken();
-      const response = await api.post('/messages/start', { recipientId: item.userId }, {
+      const receiverId = item?.userId || item?.user?.id;
+      const response = await api.post('/messages/start', { receiverId }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Navigate to the messages screen with the conversation ID
@@ -70,7 +82,9 @@ export default function ItemDetail() {
       ios: `maps://app?q=${encodeURIComponent(address)}&ll=${latitude},${longitude}`,
       android: `geo:${latitude},${longitude}?q=${encodeURIComponent(address)}`
     });
-    Linking.openURL(url);
+    if (url) {
+      Linking.openURL(url);
+    }
   };
 
   if (loading) {
@@ -124,7 +138,7 @@ export default function ItemDetail() {
             <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18 }}>
               {item.discountedPrice === 0 ? 'Free' : `${item.priceCurrency || '$'}${item.discountedPrice}`}
             </Text>
-            {item.originalPrice && item.originalPrice > item.discountedPrice && (
+            {item.originalPrice && item.discountedPrice !== undefined && item.originalPrice > item.discountedPrice && (
               <Text style={{ color: 'rgba(255,255,255,0.8)', textDecorationLine: 'line-through', fontSize: 12, textAlign: 'center' }}>
                 {item.priceCurrency || '$'}{item.originalPrice}
               </Text>

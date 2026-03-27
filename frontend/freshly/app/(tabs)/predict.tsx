@@ -4,6 +4,28 @@ import { FlaskConical } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { api } from '../../services/api';
 
+type PredictionResponse = {
+  prediction: 'Good' | 'Bad';
+  prediction_code: 0 | 1;
+  probability?: {
+    bad: number;
+    good: number;
+  } | null;
+};
+
+type PredictPayload = {
+  name: string;
+  temp: number;
+  humidity: number;
+  light: number;
+  co2: number;
+};
+
+const getErrorMessage = (e: unknown, fallback: string) => {
+  const err = e as { response?: { data?: { error?: string } }; message?: string };
+  return err?.response?.data?.error || err?.message || fallback;
+};
+
 export default function PredictScreen() {
   const { colorScheme } = useColorScheme();
   const [name, setName] = useState('Orange');
@@ -12,12 +34,12 @@ export default function PredictScreen() {
   const [light, setLight] = useState('8');
   const [co2, setCo2] = useState('350');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<PredictionResponse | null>(null);
   const [error, setError] = useState('');
 
   const isDark = colorScheme === 'dark';
 
-  const parseNumber = (value) => {
+  const parseNumber = (value: string): number | null => {
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
   };
@@ -37,14 +59,22 @@ export default function PredictScreen() {
       return;
     }
 
+    const validPayload: PredictPayload = {
+      name: payload.name,
+      temp: payload.temp,
+      humidity: payload.humidity,
+      light: payload.light,
+      co2: payload.co2,
+    };
+
     setLoading(true);
     setError('');
 
     try {
-      const response = await api.post('/ml/predict', payload);
+      const response = await api.post<PredictionResponse>('/ml/predict', validPayload);
       setResult(response.data);
     } catch (e) {
-      setError(e?.response?.data?.error || e?.message || 'Prediction failed');
+      setError(getErrorMessage(e, 'Prediction failed'));
       setResult(null);
     } finally {
       setLoading(false);
@@ -110,7 +140,11 @@ export default function PredictScreen() {
   );
 }
 
-function InputField({ label, ...props }) {
+type LocalInputFieldProps = React.ComponentProps<typeof TextInput> & {
+  label: string;
+};
+
+function InputField({ label, ...props }: LocalInputFieldProps) {
   return (
     <View className="mb-3">
       <Text className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">{label}</Text>

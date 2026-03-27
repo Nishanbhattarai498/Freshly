@@ -22,7 +22,7 @@ export default function MessagesTab() {
   const conversations = state.conversations;
   const [socketConnected, setSocketConnected] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // fetchConversations is provided by the MessagesProvider; call it when focused
@@ -66,7 +66,7 @@ export default function MessagesTab() {
     setRefreshing(false);
   };
 
-  const handleDelete = (conversationId) => {
+  const handleDelete = (conversationId: number) => {
     setDeleteTargetId(conversationId);
     setDeleteModalVisible(true);
   };
@@ -77,12 +77,12 @@ export default function MessagesTab() {
     try {
       try {
         await api.delete(`/messages/${deleteTargetId}`);
-      } catch (_e) {
+      } catch {
         console.log('Backend delete not supported or failed, falling back to local hide');
       }
 
       const deletedIds = await AsyncStorage.getItem(`deleted_chats_${user?.id}`);
-      const currentDeleted = deletedIds ? JSON.parse(deletedIds) : [];
+      const currentDeleted: string[] = deletedIds ? JSON.parse(deletedIds) : [];
       const newDeleted = [...currentDeleted, deleteTargetId.toString()];
       await AsyncStorage.setItem(`deleted_chats_${user?.id}`, JSON.stringify(newDeleted));
 
@@ -165,7 +165,7 @@ export default function MessagesTab() {
 
           return (
             <TouchableOpacity
-              onPress={() => router.push(`/chat/${item.id}`)}
+              onPress={() => router.push(`/messages/${item.id}`)}
               className="flex-row items-center mb-3 p-4 rounded-2xl bg-white/90 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm"
               activeOpacity={0.9}
             >

@@ -1,7 +1,18 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
 
-const API_URL = Constants?.expoConfig?.extra?.API_URL || 'http://192.168.1.1:5000/api';
+const resolveHost = () => {
+  const explicit = Constants?.expoConfig?.extra?.API_URL;
+  if (explicit) return explicit;
+
+  const hostUri = Constants?.expoConfig?.hostUri || Constants?.expoGoConfig?.debuggerHost;
+  const host = hostUri ? hostUri.split(':')[0] : null;
+  if (host) return `http://${host}:3000/api`;
+
+  return 'http://localhost:3000/api';
+};
+
+const API_URL = resolveHost();
 
 export const api = axios.create({
   baseURL: API_URL,

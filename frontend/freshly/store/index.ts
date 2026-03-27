@@ -32,11 +32,29 @@ export interface Item {
   };
 }
 
+export interface CreateItemPayload {
+  title: string;
+  description?: string;
+  quantity: number;
+  unit: string;
+  expiryDate: string;
+  imageUrl?: string;
+  category?: string;
+  originalPrice?: number;
+  discountedPrice?: number;
+  priceCurrency?: string;
+  location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+}
+
 interface AppState {
   items: Item[];
   isLoading: boolean;
   fetchItems: (category?: string) => Promise<void>;
-  createItem: (data: any) => Promise<void>;
+  createItem: (data: CreateItemPayload) => Promise<void>;
   claimItem: (id: number) => Promise<void>;
 }
 
@@ -64,7 +82,7 @@ export const useStore = create<AppState>((set, get) => ({
       set({ isLoading: false });
     }
   },
-  createItem: async (data) => {
+  createItem: async (data: CreateItemPayload) => {
     set({ isLoading: true });
     try {
       await api.post('/items', data);

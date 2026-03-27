@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import { MessagesProvider } from '../contexts/MessagesContext';
 
 const tokenCache = {
   async getToken(key) {
@@ -50,7 +51,9 @@ const InitialLayout = () => {
 export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <InitialLayout />
+      <MessagesProvider>
+        <InitialLayout />
+      </MessagesProvider>
     </ClerkProvider>
   );
 }

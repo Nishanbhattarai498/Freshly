@@ -4,7 +4,7 @@
     "slug": "freshly",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/splash-icon.png",
     "scheme": "freshly",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -43,6 +43,10 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "API_URL": "http://192.168.1.88:3000/api",
+      "SOCKET_URL": "http://192.168.1.88:3000"
     }
   }
 }

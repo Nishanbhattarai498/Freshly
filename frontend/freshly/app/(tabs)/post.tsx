@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, Image, Keyboard, Modal, Pressable, FlatList } from 'react-native';
-import { useStore } from '../../store';
+import { useStore } from '../../store/index';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Calendar, MapPin, Package, Type, Scale, Check, Camera } from 'lucide-react-native';

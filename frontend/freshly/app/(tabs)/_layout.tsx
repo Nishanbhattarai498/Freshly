@@ -2,36 +2,45 @@ import { Tabs } from 'expo-router';
 import { Home, PlusCircle, User, MessageCircle, FlaskConical } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { useColorScheme } from 'nativewind';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, GestureResponderEvent, ColorValue } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { useUser } from '@clerk/clerk-expo';
 
 export default function TabLayout() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
-  const { user } = useUser();
-  const isShopkeeper = user?.unsafeMetadata?.role === 'SHOPKEEPER';
 
   const theme = useMemo(
-    () => ({
-      active: '#10b981',
-      activeGlow: 'rgba(16,185,129,0.3)',
-      activeLight: 'rgba(16,185,129,0.15)',
-      inactive: isDark ? '#6b7280' : '#9ca3af',
-      bg: isDark ? ['#0f172a', '#1e293b'] : ['#ffffff', '#f8fafc'],
-      border: isDark ? 'rgba(100,116,139,0.2)' : 'rgba(15,23,42,0.08)',
-      pill: isDark ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.1)',
-      shadow: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.15)',
-      text: isDark ? '#f1f5f9' : '#0f172a',
-    }),
+    () => {
+      const bg: readonly [ColorValue, ColorValue] = isDark
+        ? ['#0f172a', '#1e293b']
+        : ['#ffffff', '#f8fafc'];
+
+      return {
+        active: '#10b981',
+        activeGlow: 'rgba(16,185,129,0.3)',
+        activeLight: 'rgba(16,185,129,0.15)',
+        inactive: isDark ? '#6b7280' : '#9ca3af',
+        bg,
+        border: isDark ? 'rgba(100,116,139,0.2)' : 'rgba(15,23,42,0.08)',
+        pill: isDark ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.1)',
+        shadow: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.15)',
+        text: isDark ? '#f1f5f9' : '#0f172a',
+      };
+    },
     [isDark]
   );
 
-  const TabIcon = ({ Icon, focused, color }) => {
+  type TabIconProps = {
+    Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+    focused: boolean;
+    color: string;
+  };
+
+  const TabIcon = ({ Icon, focused, color }: TabIconProps) => {
     const animatedPill = useAnimatedStyle(() => ({
       transform: [{ scale: withSpring(focused ? 1 : 0.8, { damping: 13, stiffness: 140 }) }],
       opacity: withTiming(focused ? 1 : 0, { duration: 200 }),
@@ -60,7 +69,7 @@ export default function TabLayout() {
     );
   };
 
-  const FabIcon = ({ focused }) => {
+  const FabIcon = ({ focused }: { focused: boolean }) => {
     const animatedStyle = useAnimatedStyle(() => ({
       transform: [
         { scale: withSpring(focused ? 1.08 : 1, { damping: 11, stiffness: 145 }) },
@@ -105,7 +114,7 @@ export default function TabLayout() {
           const { children, onPress, accessibilityState } = props;
           const focused = accessibilityState?.selected ?? false;
 
-          const handlePress = (e) => {
+          const handlePress = (e: GestureResponderEvent) => {
             if (focused) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
             } else {
@@ -195,7 +204,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="post"
         options={{
-          href: isShopkeeper ? '/post' : null,
           title: 'Create',
           tabBarIcon: ({ focused }) => <FabIcon focused={focused} />,
         }}
