@@ -10,6 +10,40 @@ import { LoadingView } from '../../components/ui/States';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+type ProfileData = {
+  avatarUrl?: string;
+  displayName?: string;
+  email?: string;
+  address?: string;
+  stats: {
+    shared: number;
+    claimed: number;
+  };
+};
+
+type AchievementsData = {
+  stats: {
+    shared: number;
+    claimed: number;
+    streak: {
+      current: number;
+      best: number;
+    };
+  };
+  rank: {
+    shared: number | null;
+    claimed: number | null;
+  };
+};
+
+type MenuItemProps = {
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+  label: string;
+  onPress: () => void;
+  color?: string;
+  badge?: string | number;
+};
+
 
 
 export default function Profile() {
@@ -19,10 +53,10 @@ export default function Profile() {
   const isDark = colorScheme === 'dark';
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-  const [achievements, setAchievements] = useState(null);
+  const [achievements, setAchievements] = useState<AchievementsData | null>(null);
   const [achievementsLoading, setAchievementsLoading] = useState(true);
 
   const fetchProfile = async () => {
@@ -57,7 +91,7 @@ export default function Profile() {
     return <LoadingView message="Loading your profile..." />;
   }
 
-  const MenuItem = ({ icon: Icon, label, onPress, color = "#6b7280", badge }) => (
+  const MenuItem = ({ icon: Icon, label, onPress, color = '#6b7280', badge }: MenuItemProps) => (
     <TouchableOpacity 
       onPress={onPress}
       className="flex-row items-center justify-between p-4 bg-white dark:bg-gray-900 mb-3 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800"

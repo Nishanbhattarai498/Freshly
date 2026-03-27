@@ -6,6 +6,7 @@ import { Mail, Lock, Key, User } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SignUp() {
   const { isLoaded, signUp, setActive } = useSignUp();
@@ -123,65 +124,84 @@ export default function SignUp() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{
         flex: 1,
-        backgroundColor: isDark ? "#111827" : "#ffffff",
+        backgroundColor: isDark ? '#0b1220' : '#f8fafc',
         paddingBottom: Platform.OS === "android" ? keyboardHeight : 0,
       }}
     >
-      <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: "center",
-          padding: 24,
-        }}
-        keyboardShouldPersistTaps="handled"
+      <LinearGradient
+        colors={isDark ? ['#0b1220', '#052e2b'] : ['#e6fffb', '#dbeafe']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1 }}
       >
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: 'center',
+            padding: 24,
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Logo Section */}
-        <View style={{ alignItems: "center", marginBottom: 30 }}>
+        <View style={{ alignItems: 'center', marginBottom: 22 }}>
           <View
             style={{
-              width: 80,
-              height: 80,
-              borderRadius: 40,
-              backgroundColor: isDark ? "#065f46" : "#d1fae5",
-              alignItems: "center",
-              justifyContent: "center",
+              width: 72,
+              height: 72,
+              borderRadius: 36,
+              backgroundColor: isDark ? 'rgba(20,184,166,0.2)' : '#ccfbf1',
+              alignItems: 'center',
+              justifyContent: 'center',
               marginBottom: 10,
             }}
           >
-            <Text style={{ fontSize: 36 }}>🌱</Text>
+            <Text style={{ fontSize: 32 }}>🍃</Text>
           </View>
 
           <Text
             style={{
-              fontSize: 28,
-              fontWeight: "bold",
-              color: isDark ? "white" : "black",
+              fontSize: 30,
+              fontWeight: '900',
+              color: isDark ? '#f8fafc' : '#0f172a',
             }}
           >
-            ExpiryPredict
+            Freshly
           </Text>
 
           <Text
             style={{
-              color: isDark ? "#9ca3af" : "#6b7280",
+              color: isDark ? '#cbd5e1' : '#475569',
               marginTop: 5,
             }}
           >
-            Smart Expiry Date Prediction System
+            Join the food-saving community.
           </Text>
         </View>
 
-        {/* Title */}
-        <Text
+        <View
           style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            marginBottom: 20,
-            color: isDark ? "white" : "black",
+            backgroundColor: isDark ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.94)',
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.08)',
+            padding: 18,
+            shadowColor: '#0f172a',
+            shadowOpacity: 0.12,
+            shadowRadius: 18,
+            shadowOffset: { width: 0, height: 12 },
+            elevation: 7,
           }}
         >
-          {verifyMode ? "Verify Email" : "Create Account"}
-        </Text>
+          <Text
+            style={{
+              fontSize: 24,
+              fontWeight: '800',
+              marginBottom: 16,
+              color: isDark ? '#f8fafc' : '#0f172a',
+            }}
+          >
+            {verifyMode ? 'Verify Email' : 'Create Account'}
+          </Text>
 
         {!verifyMode ? (
           <>
@@ -220,8 +240,8 @@ export default function SignUp() {
               <Text
                 style={{
                   marginBottom: 10,
-                  fontWeight: "600",
-                  color: isDark ? "white" : "black",
+                  fontWeight: '700',
+                  color: isDark ? '#f1f5f9' : '#0f172a',
                 }}
               >
                 Select Role
@@ -232,18 +252,18 @@ export default function SignUp() {
                   style={{
                     flex: 1,
                     padding: 12,
-                    borderRadius: 8,
+                    borderRadius: 12,
                     backgroundColor:
                       role === "CUSTOMER"
-                        ? "#6366f1"
+                        ? '#0f766e'
                         : isDark
-                          ? "#374151"
-                          : "#e5e7eb",
-                    alignItems: "center",
+                          ? '#334155'
+                          : '#e2e8f0',
+                    alignItems: 'center',
                   }}
                   onPress={() => setRole("CUSTOMER")}
                 >
-                  <Text style={{ color: role === "CUSTOMER" ? "white" : "#111" }}>
+                  <Text style={{ color: role === "CUSTOMER" ? 'white' : (isDark ? '#e2e8f0' : '#111827'), fontWeight: '700' }}>
                     Customer
                   </Text>
                 </TouchableOpacity>
@@ -252,18 +272,18 @@ export default function SignUp() {
                   style={{
                     flex: 1,
                     padding: 12,
-                    borderRadius: 8,
+                    borderRadius: 12,
                     backgroundColor:
                       role === "SHOPKEEPER"
-                        ? "#16a34a"
+                        ? '#0ea5e9'
                         : isDark
-                          ? "#374151"
-                          : "#e5e7eb",
-                    alignItems: "center",
+                          ? '#334155'
+                          : '#e2e8f0',
+                    alignItems: 'center',
                   }}
                   onPress={() => setRole("SHOPKEEPER")}
                 >
-                  <Text style={{ color: role === "SHOPKEEPER" ? "white" : "#111" }}>
+                  <Text style={{ color: role === "SHOPKEEPER" ? 'white' : (isDark ? '#e2e8f0' : '#111827'), fontWeight: '700' }}>
                     Shopkeeper
                   </Text>
                 </TouchableOpacity>
@@ -299,26 +319,28 @@ export default function SignUp() {
           style={{
             flexDirection: "row",
             justifyContent: "center",
-            marginTop: 25,
+            marginTop: 22,
           }}
         >
-          <Text style={{ color: isDark ? "#9ca3af" : "#6b7280" }}>
+          <Text style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
             Already have an account?
           </Text>
 
-          <TouchableOpacity onPress={() => router.push("/auth/login")}>
+          <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
             <Text
               style={{
-                color: "#16a34a",
+                color: '#0f766e',
                 marginLeft: 5,
-                fontWeight: "600",
+                fontWeight: '700',
               }}
             >
               Login
             </Text>
           </TouchableOpacity>
         </View>
+        </View>
       </ScrollView>
+      </LinearGradient>
     </KeyboardAvoidingView>
   );
 }

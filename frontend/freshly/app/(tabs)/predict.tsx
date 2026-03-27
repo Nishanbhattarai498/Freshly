@@ -1,8 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { FlaskConical } from 'lucide-react-native';
+import { ScrollView, Text, View } from 'react-native';
+import { FlaskConical, Sparkles } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { api } from '../../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
+import InputField from '../../components/ui/InputField';
+import Button from '../../components/ui/Button';
 
 type PredictionResponse = {
   prediction: 'Good' | 'Bad';
@@ -91,68 +94,62 @@ export default function PredictScreen() {
 
   return (
     <View className="flex-1 bg-white dark:bg-gray-950">
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
-        <View className="flex-row items-center mt-10 mb-4">
-          <FlaskConical size={20} color={isDark ? '#a7f3d0' : '#065f46'} />
-          <Text className="ml-2 text-xl font-bold text-gray-900 dark:text-white">Food Condition Predictor</Text>
-        </View>
-
-        <Text className="text-gray-600 dark:text-gray-300 mb-5">
-          Uses trained ML model with all features: name, temperature, humidity, light, and CO2.
-        </Text>
-
-        <InputField label="Food name" value={name} onChangeText={setName} placeholder="Orange" />
-        <InputField label="Temperature" value={temp} onChangeText={setTemp} placeholder="23" keyboardType="numeric" />
-        <InputField label="Humidity (%)" value={humidity} onChangeText={setHumidity} placeholder="95" keyboardType="numeric" />
-        <InputField label="Light" value={light} onChangeText={setLight} placeholder="8" keyboardType="numeric" />
-        <InputField label="CO2" value={co2} onChangeText={setCo2} placeholder="350" keyboardType="numeric" />
-
-        <TouchableOpacity
-          onPress={handlePredict}
-          className="rounded-xl mt-3 px-4 py-4 items-center"
-          style={{ backgroundColor: '#065f46' }}
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+        <LinearGradient
+          colors={isDark ? ['#0b1220', '#052e2b'] : ['#ccfbf1', '#dbeafe']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="px-6 pt-14 pb-9 rounded-b-3xl"
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold">Predict Condition</Text>}
-        </TouchableOpacity>
-
-        {error ? (
-          <View className="mt-4 p-3 rounded-xl" style={{ backgroundColor: '#fef2f2' }}>
-            <Text style={{ color: '#b91c1c', fontWeight: '600' }}>{error}</Text>
+          <View className="flex-row items-center">
+            <View className="w-11 h-11 rounded-2xl bg-white/30 items-center justify-center mr-3">
+              <FlaskConical size={20} color={isDark ? '#d1fae5' : '#065f46'} />
+            </View>
+            <View>
+              <Text className="text-2xl font-extrabold text-gray-900 dark:text-white">Freshness Predictor</Text>
+              <Text className="text-sm text-gray-700 dark:text-gray-200">AI estimate using sensor-style inputs</Text>
+            </View>
           </View>
-        ) : null}
+        </LinearGradient>
 
-        {result ? (
-          <View className="mt-5 p-4 rounded-2xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-700">
-            <Text className="text-xs uppercase tracking-[1.5px] text-emerald-800 dark:text-emerald-200">Model Output</Text>
-            <Text className="text-3xl font-black mt-1 text-emerald-900 dark:text-emerald-100">{result.prediction}</Text>
-            {confidenceText ? (
-              <Text className="mt-2 text-sm text-emerald-900 dark:text-emerald-200">Confidence: {confidenceText}</Text>
-            ) : null}
-            {result?.probability ? (
-              <Text className="mt-1 text-sm text-emerald-900 dark:text-emerald-200">
-                P(good): {(Number(result.probability.good || 0) * 100).toFixed(1)}% | P(bad): {(Number(result.probability.bad || 0) * 100).toFixed(1)}%
-              </Text>
-            ) : null}
+        <View className="px-6 mt-6">
+          <View className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+            <InputField label="Food name" value={name} onChangeText={setName} placeholder="Orange" helperText="Use the same naming style as your training data." />
+            <InputField label="Temperature" value={temp} onChangeText={setTemp} placeholder="23" keyboardType="numeric" />
+            <InputField label="Humidity (%)" value={humidity} onChangeText={setHumidity} placeholder="95" keyboardType="numeric" />
+            <InputField label="Light" value={light} onChangeText={setLight} placeholder="8" keyboardType="numeric" />
+            <InputField label="CO2" value={co2} onChangeText={setCo2} placeholder="350" keyboardType="numeric" />
+
+            <Button
+              label={loading ? 'Predicting...' : 'Predict Condition'}
+              onPress={handlePredict}
+              loading={loading}
+              iconRight={!loading ? <Sparkles size={16} color="#ffffff" /> : undefined}
+            />
           </View>
-        ) : null}
+
+          {error ? (
+            <View className="mt-4 p-4 rounded-2xl border border-rose-200 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-700">
+              <Text style={{ color: '#b91c1c', fontWeight: '700' }}>{error}</Text>
+            </View>
+          ) : null}
+
+          {result ? (
+            <View className="mt-5 p-5 rounded-3xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-700">
+              <Text className="text-xs uppercase tracking-[1.8px] text-emerald-800 dark:text-emerald-200 font-bold">Model Output</Text>
+              <Text className="text-4xl font-black mt-1 text-emerald-900 dark:text-emerald-100">{result.prediction}</Text>
+              {confidenceText ? (
+                <Text className="mt-2 text-base text-emerald-900 dark:text-emerald-200 font-semibold">Confidence: {confidenceText}</Text>
+              ) : null}
+              {result?.probability ? (
+                <Text className="mt-1 text-sm text-emerald-900 dark:text-emerald-200">
+                  P(good): {(Number(result.probability.good || 0) * 100).toFixed(1)}% | P(bad): {(Number(result.probability.bad || 0) * 100).toFixed(1)}%
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
       </ScrollView>
-    </View>
-  );
-}
-
-type LocalInputFieldProps = React.ComponentProps<typeof TextInput> & {
-  label: string;
-};
-
-function InputField({ label, ...props }: LocalInputFieldProps) {
-  return (
-    <View className="mb-3">
-      <Text className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">{label}</Text>
-      <TextInput
-        {...props}
-        className="rounded-xl border border-gray-300 dark:border-gray-700 px-3 py-3 text-base text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
-        placeholderTextColor="#9ca3af"
-      />
     </View>
   );
 }

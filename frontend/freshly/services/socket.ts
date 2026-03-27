@@ -1,5 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 type ServerToClientEvents = {
 	connect: () => void;
@@ -18,12 +19,20 @@ type ClientToServerEvents = {
 type FreshlySocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 const resolveSocketUrl = (): string => {
-	const explicit = Constants?.expoConfig?.extra?.SOCKET_URL;
-	if (explicit) return explicit;
+	const fromEnv = process.env.EXPO_PUBLIC_SOCKET_URL;
+	if (fromEnv) return fromEnv.replace(/\/$/, '');
+
+	const explicit = Constants?.expoConfig?.extra?.SOCKET_URL as string | undefined;
+	if (explicit) return explicit.replace(/\/$/, '');
 
 	const hostUri = Constants?.expoConfig?.hostUri || Constants?.expoGoConfig?.debuggerHost;
-	const host = hostUri ? hostUri.split(':')[0] : null;
+	let host = hostUri ? hostUri.split(':')[0] : null;
+	if (host && (host === 'localhost' || host === '127.0.0.1') && Platform.OS === 'android') {
+		host = '10.0.2.2';
+	}
 	if (host) return `http://${host}:3000`;
+
+	if (Platform.OS === 'android') return 'http://10.0.2.2:3000';
 
 	return 'http://localhost:3000';
 };

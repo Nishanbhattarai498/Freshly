@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, RefreshControl, StatusBar, ScrollView, Alert } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, RefreshControl, StatusBar, ScrollView, Alert, type ListRenderItem } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, Clock, Search, Bell, Calendar, Sparkles, ChevronRight, ArrowUpRight } from 'lucide-react-native';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -8,13 +8,33 @@ import { getCurrencySymbol } from '../../utils/currencies';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../services/api';
+import type { Item } from '../../store';
+
+type ThemeTokens = {
+  bg: string;
+  border: string;
+  text: string;
+};
+
+type ItemProp = {
+  item: Item;
+};
+
+type CardMetaProps = {
+  item: Item;
+  isDark: boolean;
+};
+
+type StatBadgeProps = {
+  children: React.ReactNode;
+};
 
 export default function Home() {
-  const [items, setItems] = React.useState([]);
+  const [items, setItems] = React.useState<Item[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
   const { colorScheme } = useColorScheme();
-  const [userAddress, setUserAddress] = React.useState(null);
+  const [userAddress, setUserAddress] = React.useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = React.useState('All');
 
   const CATEGORIES = ['All', 'Vegetables', 'Fruits', 'Bakery', 'Meals', 'Dairy', 'Other'];
@@ -70,7 +90,7 @@ export default function Home() {
   const fetchItems = React.useCallback(async () => {
     try {
       setIsLoading(true);
-      const params = {};
+      const params: { category?: string } = {};
 
       if (selectedCategory && selectedCategory !== 'All') {
         params.category = selectedCategory;
@@ -91,9 +111,9 @@ export default function Home() {
   }, [fetchItems]);
 
   const formatLocation = useMemo(
-    () => (address) => {
+    () => (address?: string | null) => {
       if (!address) return 'Location not specified';
-      const parts = address.split(',').map((p) => p.trim()).filter(Boolean);
+      const parts = address.split(',').map((p: string) => p.trim()).filter(Boolean);
       if (parts.length === 0) return 'Location not specified';
       const lastThree = parts.slice(-3);
       return lastThree.join(' · ');
@@ -101,7 +121,7 @@ export default function Home() {
     []
   );
 
-  const getStatusTheme = (status) => {
+  const getStatusTheme = (status: Item['status'] | string): ThemeTokens => {
     switch (status) {
       case 'CLAIMED':
         return {
@@ -124,7 +144,7 @@ export default function Home() {
     }
   };
 
-  const PriceTag = ({ item }) => {
+  const PriceTag = ({ item }: ItemProp) => {
     if (item.discountedPrice !== null && item.discountedPrice !== undefined) {
       if (item.discountedPrice === 0) {
         return <Text className="text-emerald-50 text-sm font-bold bg-black/60 px-3 py-1 rounded-full">Free</Text>;
@@ -146,7 +166,7 @@ export default function Home() {
     return <Text className="text-emerald-50 text-sm font-bold bg-black/60 px-3 py-1 rounded-full">Free</Text>;
   };
 
-  const CardMeta = ({ item, isDark }) => (
+  const CardMeta = ({ item, isDark }: CardMetaProps) => (
     <View className="flex-row items-center justify-between mt-3">
       <View className="flex-row items-center">
         <Image
@@ -186,13 +206,13 @@ export default function Home() {
     </View>
   );
 
-  const StatBadge = ({ children }) => (
+  const StatBadge = ({ children }: StatBadgeProps) => (
     <View className="bg-emerald-600/90 px-3 py-1 rounded-full border border-emerald-500/70 shadow-sm">
       <Text className="text-white text-xs font-semibold leading-none">{children}</Text>
     </View>
   );
 
-  const renderItem = ({ item }) => {
+  const renderItem: ListRenderItem<Item> = ({ item }) => {
     const theme = getStatusTheme(item.status);
     return (
     <TouchableOpacity

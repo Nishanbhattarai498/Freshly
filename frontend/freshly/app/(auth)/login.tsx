@@ -6,6 +6,7 @@ import { Mail, Lock, ArrowRight, Key } from 'lucide-react-native';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import * as Location from 'expo-location';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Login() {
   const { signIn, setActive, isLoaded } = useSignIn();
@@ -131,46 +132,75 @@ export default function Login() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, backgroundColor: isDark ? "#111827" : "#fff", paddingBottom: keyboardHeight }}
+      style={{ flex: 1, backgroundColor: isDark ? '#0b1220' : '#f8fafc', paddingBottom: keyboardHeight }}
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}>
-        <View style={{ paddingHorizontal: 30 }}>
-          <View style={{ alignItems: "center", marginBottom: 40 }}>
-            <Text style={{ fontSize: 34, fontWeight: "bold", color: isDark ? "#a5b4fc" : "#4f46e5" }}>
-              ExpiryPredict
-            </Text>
-            <Text style={{ color: isDark ? "#9ca3af" : "#6b7280", marginTop: 6, textAlign: "center" }}>
-              Smart Expiry Date Prediction System
-            </Text>
-          </View>
+      <LinearGradient
+        colors={isDark ? ['#0b1220', '#052e2b'] : ['#e6fffb', '#dbeafe']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 36 }}>
+          <View style={{ paddingHorizontal: 24 }}>
+            <View style={{ alignItems: 'center', marginBottom: 26 }}>
+              <View style={{ width: 66, height: 66, borderRadius: 33, backgroundColor: isDark ? 'rgba(20,184,166,0.2)' : '#ccfbf1', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                <Text style={{ fontSize: 30 }}>🍃</Text>
+              </View>
+              <Text style={{ fontSize: 34, fontWeight: '900', color: isDark ? '#f8fafc' : '#0f172a' }}>
+                Freshly
+              </Text>
+              <Text style={{ color: isDark ? '#cbd5e1' : '#475569', marginTop: 6, textAlign: 'center' }}>
+                Welcome back. Let&apos;s rescue great food.
+              </Text>
+            </View>
 
-          {!verifyMode ? (
-            <>
-              <InputField label="Email" value={email} onChangeText={setEmail} placeholder="example@mail.com" icon={<Mail size={20} color="#6b7280" />} />
-              <InputField label="Password" value={userPassword} onChangeText={setUserPassword} placeholder="Enter password" secureTextEntry icon={<Lock size={20} color="#6b7280" />} />
-              <Button label="Login" onPress={onSignInPress} loading={loading} iconRight={<ArrowRight size={18} color="white" />} />
-            </>
-          ) : (
-            <>
-              <InputField label="Verification Code" value={verificationCode} onChangeText={setVerificationCode} placeholder="Enter email code" keyboardType="number-pad" icon={<Key size={20} color="#6b7280" />} />
-              <Button label="Verify Account" onPress={handleVerification} loading={loading} />
-              <TouchableOpacity onPress={() => setVerifyMode(false)} style={{ marginTop: 15, alignItems: "center" }}>
-                <Text style={{ color: isDark ? "#9ca3af" : "#6b7280" }}>Back to Login</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onResendPress} style={{ marginTop: 10, alignItems: "center" }}>
-                <Text style={{ color: "#22c55e" }}>Resend Code</Text>
-              </TouchableOpacity>
-            </>
-          )}
+            <View
+              style={{
+                backgroundColor: isDark ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.94)',
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.08)',
+                padding: 18,
+                shadowColor: '#0f172a',
+                shadowOpacity: 0.12,
+                shadowRadius: 18,
+                shadowOffset: { width: 0, height: 12 },
+                elevation: 7,
+              }}
+            >
+              <Text style={{ fontSize: 22, fontWeight: '800', marginBottom: 14, color: isDark ? '#f8fafc' : '#0f172a' }}>
+                {verifyMode ? 'Verify account' : 'Login'}
+              </Text>
 
-          <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 30 }}>
-            <Text style={{ color: isDark ? "#9ca3af" : "#374151" }}>New user?</Text>
-            <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
-              <Text style={{ color: "#22c55e", fontWeight: "600", marginLeft: 5 }}>Register</Text>
-            </TouchableOpacity>
+              {!verifyMode ? (
+                <>
+                  <InputField label="Email" value={email} onChangeText={setEmail} placeholder="example@mail.com" icon={<Mail size={20} color="#64748b" />} />
+                  <InputField label="Password" value={userPassword} onChangeText={setUserPassword} placeholder="Enter password" secureTextEntry icon={<Lock size={20} color="#64748b" />} />
+                  <Button label="Login" onPress={onSignInPress} loading={loading} iconRight={<ArrowRight size={18} color="white" />} />
+                </>
+              ) : (
+                <>
+                  <InputField label="Verification Code" value={verificationCode} onChangeText={setVerificationCode} placeholder="Enter email code" keyboardType="number-pad" icon={<Key size={20} color="#64748b" />} helperText="Check your email inbox for the latest code." />
+                  <Button label="Verify Account" onPress={handleVerification} loading={loading} />
+                  <TouchableOpacity onPress={() => setVerifyMode(false)} style={{ marginTop: 15, alignItems: 'center' }}>
+                    <Text style={{ color: isDark ? '#cbd5e1' : '#475569', fontWeight: '600' }}>Back to Login</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={onResendPress} style={{ marginTop: 10, alignItems: 'center' }}>
+                    <Text style={{ color: '#0f766e', fontWeight: '700' }}>Resend Code</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}>
+                <Text style={{ color: isDark ? '#cbd5e1' : '#334155' }}>New user?</Text>
+                <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
+                  <Text style={{ color: '#0f766e', fontWeight: '700', marginLeft: 5 }}>Create account</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
     </KeyboardAvoidingView>
   );
 }
