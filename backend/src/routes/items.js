@@ -58,6 +58,43 @@ try{
 }
 });
 
+// Get items for a specific user
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { type } = req.query;
+
+    if (type === 'claimed') {
+      const userClaims = await db.query.claims.findMany({
+        where: eq(claims.claimerId, userId),
+        with: { item: true }
+      });
+      const claimedItems = (userClaims || []).map(c => c.item).filter(Boolean);
+
+      const enriched = await Promise.all(claimedItems.map(async (it) => {
+        const full = await db.query.items.findFirst({
+          where: eq(items.id, it.id),
+          with: { location: true, user: true }
+        });
+        return full;
+      }));
+      return res.json(enriched);
+    }
+
+    const sharedAll = await db.query.items.findMany({
+      where: eq(items.userId, userId),
+      with: { location: true, user: true },
+      orderBy: [desc(items.createdAt)],
+    });
+
+    const shared = (sharedAll || []).filter(it => it.status !== 'DELETED');
+    return res.json(shared);
+  } catch (error) {
+    console.error('Get user items error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 //get single item 
 /// get from (/items/12)
 router.get('/:id', async(req,res) =>{
@@ -237,43 +274,6 @@ router.delete('/:id', requireAuth, async (req, res) => {
     });
   }
 });
-// Get items for a specific user
-router.get('/user/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { type } = req.query;
-
-    if (type === 'claimed') {
-      const userClaims = await db.query.claims.findMany({ 
-        where: eq(claims.claimerId, userId), 
-        with: { item: true } 
-      });
-      const claimedItems = (userClaims || []).map(c => c.item).filter(Boolean);
-      
-      const enriched = await Promise.all(claimedItems.map(async (it) => {
-        const full = await db.query.items.findFirst({ 
-          where: eq(items.id, it.id), 
-          with: { location: true, user: true } 
-        });
-        return full;
-      }));
-      return res.json(enriched);
-    }
-
-    const sharedAll = await db.query.items.findMany({
-      where: eq(items.userId, userId),
-      with: { location: true, user: true },
-      orderBy: [desc(items.createdAt)],
-    });
-
-    const shared = (sharedAll || []).filter(it => it.status !== 'DELETED');
-    return res.json(shared);
-  } catch (error) {
-    console.error('Get user items error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 export default router;
 
 

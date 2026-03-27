@@ -11,6 +11,9 @@ const backendRoot = path.resolve(__dirname, '..', '..');
 const router = express.Router();
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL?.replace(/\/$/, '');
 const ML_REQUEST_TIMEOUT_MS = parseInt(process.env.ML_REQUEST_TIMEOUT_MS || '10000', 10);
+const ML_RETRY_ATTEMPTS = Math.max(parseInt(process.env.ML_RETRY_ATTEMPTS || '2', 10), 1);
+const ML_RETRY_BACKOFF_MS = Math.max(parseInt(process.env.ML_RETRY_BACKOFF_MS || '1200', 10), 250);
+const ML_LOCAL_FALLBACK_ENABLED = process.env.ML_LOCAL_FALLBACK !== '0';
 
 const predictSchema = z.object({
   name: z.string().min(2),
@@ -19,6 +22,23 @@ const predictSchema = z.object({
   light: z.number(),
   co2: z.number().min(0),
 });
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const withStatus = (message, statusCode, details) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  if (details) error.details = details;
+  return error;
+};
+
+const extractResponseMessage = (parsed, status) => {
+  if (parsed?.error) return parsed.error;
+  if (parsed?.detail) return parsed.detail;
+  return `ML service request failed with status ${status}`;
+};
+
+const isRetryableUpstreamStatus = (status) => [429, 500, 502, 503, 504].includes(status);
 
 const runPythonPredict = (payload) => {
   return new Promise((resolve, reject) => {
@@ -59,12 +79,12 @@ const runPythonPredict = (payload) => {
     });
 
     child.on('error', (error) => {
-      reject(new Error(`Failed to start Python process: ${error.message}`));
+      reject(withStatus(`Failed to start Python process: ${error.message}`, 503));
     });
 
     child.on('close', (code) => {
       if (code !== 0) {
-        reject(new Error(stderr || `Prediction process failed with exit code ${code}`));
+        reject(withStatus(stderr || `Prediction process failed with exit code ${code}`, 503));
         return;
       }
 
@@ -72,7 +92,7 @@ const runPythonPredict = (payload) => {
         const parsed = JSON.parse(stdout.trim());
         resolve(parsed);
       } catch (_error) {
-        reject(new Error('Prediction output was not valid JSON.'));
+        reject(withStatus('Prediction output was not valid JSON.', 500));
       }
     });
   });
@@ -80,48 +100,72 @@ const runPythonPredict = (payload) => {
 
 const runRemotePredict = async (payload) => {
   if (!ML_SERVICE_URL) {
-    throw new Error('ML_SERVICE_URL is not configured');
+    throw withStatus('ML_SERVICE_URL is not configured', 503);
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), ML_REQUEST_TIMEOUT_MS);
+  let lastError = null;
 
-  try {
-    const response = await fetch(`${ML_SERVICE_URL}/predict`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
+  for (let attempt = 1; attempt <= ML_RETRY_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), ML_REQUEST_TIMEOUT_MS);
 
-    const text = await response.text();
-    let parsed;
     try {
-      parsed = text ? JSON.parse(text) : null;
-    } catch (_e) {
-      parsed = null;
-    }
+      const response = await fetch(`${ML_SERVICE_URL}/predict`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      const message = parsed?.error || parsed?.detail || `ML service request failed with status ${response.status}`;
-      throw new Error(message);
-    }
+      const text = await response.text();
+      let parsed;
+      try {
+        parsed = text ? JSON.parse(text) : null;
+      } catch (_e) {
+        parsed = null;
+      }
 
-    if (!parsed) {
-      throw new Error('ML service returned empty or invalid JSON');
-    }
+      if (!response.ok) {
+        const message = extractResponseMessage(parsed, response.status);
+        const mappedStatus = response.status >= 500 ? 502 : 400;
+        const err = withStatus(message, mappedStatus);
 
-    return parsed;
-  } catch (error) {
-    if (error?.name === 'AbortError') {
-      throw new Error(`ML service request timed out after ${ML_REQUEST_TIMEOUT_MS}ms`);
+        if (isRetryableUpstreamStatus(response.status) && attempt < ML_RETRY_ATTEMPTS) {
+          lastError = err;
+          await sleep(ML_RETRY_BACKOFF_MS * attempt);
+          continue;
+        }
+
+        throw err;
+      }
+
+      if (!parsed) {
+        throw withStatus('ML service returned empty or invalid JSON', 502);
+      }
+
+      return parsed;
+    } catch (error) {
+      const isAbort = error?.name === 'AbortError';
+      const wrapped = isAbort
+        ? withStatus(`ML service request timed out after ${ML_REQUEST_TIMEOUT_MS}ms`, 504)
+        : withStatus(error?.message || 'Failed to reach ML service', error?.statusCode || 502);
+
+      const retryable = isAbort || (wrapped.statusCode >= 500 && wrapped.statusCode <= 504);
+      if (retryable && attempt < ML_RETRY_ATTEMPTS) {
+        lastError = wrapped;
+        await sleep(ML_RETRY_BACKOFF_MS * attempt);
+        continue;
+      }
+
+      throw wrapped;
+    } finally {
+      clearTimeout(timeout);
     }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
   }
+
+  throw lastError || withStatus('ML service request failed', 502);
 };
 
 const getRemoteHealth = async () => {
@@ -165,8 +209,11 @@ router.get('/status', async (req, res) => {
     active: true,
     mode: ML_SERVICE_URL ? 'remote-python-service' : 'local-python-process',
     mlServiceUrl: ML_SERVICE_URL || null,
+    retryAttempts: ML_RETRY_ATTEMPTS,
+    timeoutMs: ML_REQUEST_TIMEOUT_MS,
     remoteHealth,
     localFallback: {
+      enabled: ML_LOCAL_FALLBACK_ENABLED,
       modelPath: 'ml/best_food_condition_model.joblib',
     },
     inputFeatures: ['name', 'temp', 'humidity', 'light', 'co2'],
@@ -174,15 +221,57 @@ router.get('/status', async (req, res) => {
 });
 
 router.post('/predict', async (req, res) => {
-  try {
-    const body = predictSchema.parse(req.body);
-    const prediction = ML_SERVICE_URL
-      ? await runRemotePredict(body)
-      : await runPythonPredict(body);
+  const parsedBody = predictSchema.safeParse(req.body);
+  if (!parsedBody.success) {
+    return res.status(422).json({
+      error: 'Invalid prediction input',
+      details: parsedBody.error.flatten(),
+    });
+  }
 
-    return res.json(prediction);
+  const payload = parsedBody.data;
+  const attempts = [];
+
+  try {
+    if (ML_SERVICE_URL) {
+      try {
+        const prediction = await runRemotePredict(payload);
+        return res.json({ ...prediction, prediction_source: 'remote' });
+      } catch (remoteError) {
+        attempts.push({
+          source: 'remote',
+          message: remoteError?.message || 'Remote prediction failed',
+          statusCode: remoteError?.statusCode || 502,
+        });
+      }
+    }
+
+    if (ML_LOCAL_FALLBACK_ENABLED) {
+      try {
+        const prediction = await runPythonPredict(payload);
+        return res.json({ ...prediction, prediction_source: ML_SERVICE_URL ? 'local-fallback' : 'local' });
+      } catch (localError) {
+        attempts.push({
+          source: 'local',
+          message: localError?.message || 'Local prediction failed',
+          statusCode: localError?.statusCode || 503,
+        });
+      }
+    }
+
+    const primary = attempts[0] || {
+      source: 'unknown',
+      message: 'Prediction failed',
+      statusCode: 502,
+    };
+
+    return res.status(primary.statusCode).json({
+      error: primary.message,
+      attempts,
+      hint: 'If this is a hosted environment, verify ML_SERVICE_URL and service uptime.',
+    });
   } catch (error) {
-    return res.status(400).json({
+    return res.status(error?.statusCode || 500).json({
       error: error?.message || 'Prediction failed',
     });
   }

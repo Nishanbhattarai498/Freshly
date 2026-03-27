@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, type TextInputProps } from 'react-native';
+import { View, TextInput, Text, TouchableOpacity, type TextInputProps, type ViewStyle } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 
 type InputFieldProps = TextInputProps & {
@@ -7,6 +7,10 @@ type InputFieldProps = TextInputProps & {
   icon?: React.ReactNode;
   error?: string;
   helperText?: string;
+  rightElement?: React.ReactNode;
+  containerClassName?: string;
+  containerStyle?: ViewStyle;
+  inputContainerStyle?: ViewStyle;
 };
 
 export default function InputField({
@@ -19,6 +23,10 @@ export default function InputField({
   icon,
   error,
   helperText,
+  rightElement,
+  containerClassName,
+  containerStyle,
+  inputContainerStyle,
   multiline,
   numberOfLines,
   ...props
@@ -27,7 +35,7 @@ export default function InputField({
   const [hidePassword, setHidePassword] = useState(secureTextEntry);
 
   return (
-    <View style={{ marginBottom: 16 }}>
+    <View className={containerClassName} style={[{ marginBottom: 16 }, containerStyle]}>
       {label && (
         <Text
           style={{
@@ -42,24 +50,28 @@ export default function InputField({
       )}
 
       <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          borderWidth: 1,
-          borderColor: error
-            ? '#ef4444'
-            : isFocused
-              ? '#14b8a6'
-              : '#cbd5e1',
-          borderRadius: 14,
-          paddingHorizontal: 14,
-          backgroundColor: '#ffffff',
-          shadowColor: '#0f172a',
-          shadowOpacity: isFocused ? 0.08 : 0.04,
-          shadowRadius: 10,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: isFocused ? 2 : 0,
-        }}
+        style={[
+          {
+            flexDirection: "row",
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: error
+              ? '#ef4444'
+              : isFocused
+                ? '#14b8a6'
+                : '#cbd5e1',
+            borderRadius: 14,
+            paddingHorizontal: 14,
+            backgroundColor: '#ffffff',
+            shadowColor: '#0f172a',
+            shadowOpacity: isFocused ? 0.08 : 0.04,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: isFocused ? 2 : 0,
+            ...(multiline ? { alignItems: 'flex-start' } : null),
+          },
+          inputContainerStyle,
+        ]}
       >
         {icon && <View style={{ marginRight: 8 }}>{icon}</View>}
 
@@ -95,6 +107,8 @@ export default function InputField({
             )}
           </TouchableOpacity>
         )}
+
+        {rightElement && !secureTextEntry ? <View style={{ marginLeft: 8 }}>{rightElement}</View> : null}
       </View>
 
       {!error && helperText ? (

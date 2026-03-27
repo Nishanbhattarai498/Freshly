@@ -8,6 +8,11 @@ import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import { LinearGradient } from 'expo-linear-gradient';
 
+const getClerkErrorMessage = (err: unknown, fallback: string): string => {
+  const maybeErr = err as { errors?: { message?: string }[]; message?: string };
+  return maybeErr?.errors?.[0]?.message || maybeErr?.message || fallback;
+};
+
 export default function SignUp() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const { isLoaded: userLoaded, isSignedIn, user } = useUser();
@@ -68,6 +73,11 @@ export default function SignUp() {
   };
 
   const onSignUpPress = async () => {
+    if (!signUp) {
+      Alert.alert('Sign up unavailable', 'Authentication service is still loading. Please try again.');
+      return;
+    }
+
     if (!email || !userPassword || !firstName || !lastName) {
       Alert.alert("Missing Fields", "Please fill all fields.");
       return;
@@ -89,15 +99,20 @@ export default function SignUp() {
 
       setVerifyMode(true);
       Alert.alert('Verification Email Sent', 'Check your email for the code.');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      Alert.alert('Sign Up Failed', err?.errors?.[0]?.message || 'Try again');
+      Alert.alert('Sign Up Failed', getClerkErrorMessage(err, 'Try again'));
     } finally {
       setLoading(false);
     }
   };
 
   const onPressVerify = async () => {
+    if (!signUp || !setActive) {
+      Alert.alert('Verification unavailable', 'Authentication service is still loading. Please try again.');
+      return;
+    }
+
     setLoading(true);
 
     try {

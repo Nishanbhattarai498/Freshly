@@ -1,10 +1,13 @@
 import axios from 'axios';
+import type { AxiosRequestHeaders } from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 type TokenProvider = () => Promise<string | null>;
 
 let tokenProvider: TokenProvider = async () => null;
+const DEBUG_AUTH = process.env.EXPO_PUBLIC_DEBUG_AUTH === '1';
+const protectedPrefixes = ['/users', '/messages', '/notifications'];
 
 export const setAuthTokenProvider = (provider: TokenProvider) => {
   tokenProvider = provider;
@@ -49,11 +52,30 @@ api.interceptors.request.use(
     // Inject Clerk JWT automatically for protected endpoints.
     if (!config.headers?.Authorization) {
       const token = await tokenProvider();
+      const requestPath = typeof config.url === 'string' ? config.url : '';
+      const isProtectedPath = protectedPrefixes.some((prefix) => requestPath.startsWith(prefix));
+
+      if (DEBUG_AUTH) {
+        const preview = token ? `${token.slice(0, 16)}...` : null;
+        console.log('Auth token debug', {
+          method: config.method,
+          url: requestPath,
+          hasToken: Boolean(token),
+          tokenPreview: preview,
+        });
+      }
+
+      if (!token && isProtectedPath) {
+        console.warn('Missing auth token for protected request', {
+          method: config.method,
+          url: requestPath,
+        });
+      }
+
       if (token) {
-        config.headers = {
-          ...config.headers,
-          Authorization: `Bearer ${token}`,
-        };
+        const nextHeaders = (config.headers ?? {}) as AxiosRequestHeaders;
+        nextHeaders.Authorization = `Bearer ${token}`;
+        config.headers = nextHeaders;
       }
     }
     return config;

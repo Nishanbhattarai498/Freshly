@@ -47,7 +47,7 @@ type MenuItemProps = {
 
 
 export default function Profile() {
-  const { signOut } = useAuth();
+  const { signOut, isSignedIn } = useAuth();
   const { user: clerkUser } = useUser();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -58,8 +58,17 @@ export default function Profile() {
   const [imageError, setImageError] = useState(false);
   const [achievements, setAchievements] = useState<AchievementsData | null>(null);
   const [achievementsLoading, setAchievementsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
+    if (!isSignedIn) {
+      setLoading(false);
+      setAchievementsLoading(false);
+      setProfile(null);
+      setAchievements(null);
+      return;
+    }
+
     try {
       const [profileRes, achievementRes] = await Promise.all([
         api.get('/users/me'),
@@ -68,18 +77,22 @@ export default function Profile() {
       setProfile(profileRes.data);
       setAchievements(achievementRes.data);
       setImageError(false);
+      setAuthError(null);
     } catch (error) {
+      if ((error as { response?: { status?: number } })?.response?.status === 401) {
+        setAuthError('Session expired. Please sign in again.');
+      }
       console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
       setAchievementsLoading(false);
     }
-  };
+  }, [isSignedIn]);
 
   useFocusEffect(
     useCallback(() => {
       fetchProfile();
-    }, [])
+    }, [fetchProfile])
   );
 
   const handleSignOut = async () => {
@@ -89,6 +102,44 @@ export default function Profile() {
 
   if (loading) {
     return <LoadingView message="Loading your profile..." />;
+  }
+
+  if (!isSignedIn) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900 px-6">
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Please login</Text>
+        <Text className="text-gray-600 dark:text-gray-300 text-center mb-4">Sign in to view your profile and achievements.</Text>
+        <TouchableOpacity
+          onPress={() => router.replace('/(auth)/login')}
+          className="px-5 py-3 rounded-xl bg-teal-700"
+        >
+          <Text className="text-white font-bold">Go to Login</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (authError) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900 px-6">
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Unauthorized</Text>
+        <Text className="text-gray-600 dark:text-gray-300 text-center mb-4">{authError}</Text>
+        <View className="flex-row">
+          <TouchableOpacity
+            onPress={fetchProfile}
+            className="px-5 py-3 rounded-xl bg-gray-200 dark:bg-gray-700 mr-3"
+          >
+            <Text className="text-gray-900 dark:text-white font-bold">Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.replace('/(auth)/login')}
+            className="px-5 py-3 rounded-xl bg-teal-700"
+          >
+            <Text className="text-white font-bold">Login</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   }
 
   const MenuItem = ({ icon: Icon, label, onPress, color = '#6b7280', badge }: MenuItemProps) => (

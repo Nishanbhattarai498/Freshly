@@ -3,12 +3,21 @@ import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, Text
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { api } from '../../services/api';
+import { connectSocket } from '../../services/socket';
 
 type ChatMessage = {
   id: number;
   senderId: string;
+  conversationId?: number;
   content?: string | null;
   createdAt?: string;
+};
+
+type NewMessageEvent = {
+  conversation?: {
+    id?: number;
+  };
+  message?: ChatMessage;
 };
 
 const getErrorMessage = (e: unknown, fallback: string) => {
@@ -54,9 +63,44 @@ export default function ConversationScreen() {
     loadConversation();
   }, [loadConversation]);
 
+  useEffect(() => {
+    if (!userId || !conversationId || Number.isNaN(conversationId)) return;
+
+    const socket = connectSocket(userId);
+    const joinConversation = () => {
+      socket.emit('join_conversation', conversationId);
+    };
+
+    const onIncomingMessage = (payload: unknown) => {
+      const parsedPayload = payload as NewMessageEvent;
+      const incomingMessage = parsedPayload?.message;
+      const incomingConversationId = parsedPayload?.conversation?.id ?? incomingMessage?.conversationId;
+
+      if (!incomingMessage || Number(incomingConversationId) !== conversationId) return;
+
+      setMessages((prev) => {
+        if (prev.some((msg) => msg.id === incomingMessage.id)) return prev;
+        return [...prev, incomingMessage];
+      });
+    };
+
+    socket.on('connect', joinConversation);
+    socket.on('new_message', onIncomingMessage);
+
+    if (socket.connected) {
+      joinConversation();
+    }
+
+    return () => {
+      socket.emit('leave_conversation', conversationId);
+      socket.off('connect', joinConversation);
+      socket.off('new_message', onIncomingMessage);
+    };
+  }, [conversationId, userId]);
+
   const sendMessage = useCallback(async () => {
     const content = input.trim();
-    if (!content || sending) return;
+    if (!content || sending || !conversationId || Number.isNaN(conversationId)) return;
 
     setSending(true);
     try {

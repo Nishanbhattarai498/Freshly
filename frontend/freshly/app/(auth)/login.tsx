@@ -8,6 +8,11 @@ import Button from '../../components/ui/Button';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 
+const getClerkErrorMessage = (err: unknown, fallback: string): string => {
+  const maybeErr = err as { errors?: { message?: string }[]; message?: string };
+  return maybeErr?.errors?.[0]?.message || maybeErr?.message || fallback;
+};
+
 export default function Login() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const { isLoaded: userLoaded, isSignedIn, user } = useUser();
@@ -57,6 +62,11 @@ export default function Login() {
   };
 
   const onSignInPress = async () => {
+    if (!signIn || !setActive) {
+      Alert.alert('Login unavailable', 'Authentication service is still loading. Please try again.');
+      return;
+    }
+
     if (!email || !userPassword) {
       Alert.alert("Missing Fields", "Please enter email and password.");
       return;
@@ -74,14 +84,19 @@ export default function Login() {
       } else if (result.status === "needs_first_factor") {
         setVerifyMode(true);
       }
-    } catch (err) {
-      Alert.alert("Login Failed", err?.errors?.[0]?.message || "Something went wrong");
+    } catch (err: unknown) {
+      Alert.alert("Login Failed", getClerkErrorMessage(err, "Something went wrong"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerification = async () => {
+    if (!signIn || !setActive) {
+      Alert.alert('Verification unavailable', 'Authentication service is still loading. Please try again.');
+      return;
+    }
+
     if (!verificationCode) return Alert.alert("Missing Code", "Enter the verification code.");
 
     setLoading(true);
@@ -97,8 +112,8 @@ export default function Login() {
 
         await requestLocationPermission();
       }
-    } catch (_err) {
-      Alert.alert("Invalid Code", "Please try again.");
+    } catch (err: unknown) {
+      Alert.alert("Invalid Code", getClerkErrorMessage(err, "Please try again."));
     } finally {
       setLoading(false);
     }
@@ -108,10 +123,11 @@ export default function Login() {
     if (!isLoaded || !signIn) return;
     setLoading(true);
     try {
-      const emailFactor = signIn.supportedFirstFactors?.find(f => f.strategy === "email_code");
+      const emailFactor = signIn.supportedFirstFactors?.find((f) => f.strategy === "email_code");
       if (!emailFactor) throw new Error("Email factor not found");
 
-      await signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: emailFactor.emailAddressId });
+      const factor = emailFactor as { strategy: 'email_code'; emailAddressId: string };
+      await signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: factor.emailAddressId });
       Alert.alert("Code Resent", "A new verification code has been sent to your email.");
     } catch (err) {
       console.log("Resend error:", err);

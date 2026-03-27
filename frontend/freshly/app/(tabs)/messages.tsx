@@ -46,7 +46,9 @@ export default function MessagesTab() {
       }
 
       // polling fallback in case socket is not available
-      const poll = setInterval(() => fetchConversations(), 10000);
+      const poll = setInterval(() => {
+        void fetchConversations().catch(() => undefined);
+      }, 10000);
 
       return () => {
         if (socket) {

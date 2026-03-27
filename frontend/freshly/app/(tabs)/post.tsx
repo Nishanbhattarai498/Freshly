@@ -12,6 +12,22 @@ import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import { StatusPopup } from '../../components/ui/States';
 
+type PostStatus = {
+  type: 'success' | 'error' | 'info';
+  title: string;
+  description?: string;
+  onConfirm?: () => void;
+};
+
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+  message?: string;
+};
+
 const PRESET_IMAGES = [
   { id: 'veg', url: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=800', label: 'Vegetables' },
   { id: 'fruit', url: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800', label: 'Fruits' },
@@ -40,7 +56,7 @@ export default function PostItem() {
   const [category, setCategory] = useState('Vegetables');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isCustomImage, setIsCustomImage] = useState(false);
-  const [status, setStatus] = useState(null);
+  const [status, setStatus] = useState<PostStatus | null>(null);
 
   const quickExpiry = [1, 2, 3, 5];
   const quickDiscounts = [25, 50, 75];
@@ -120,19 +136,21 @@ export default function PostItem() {
     }
 
     try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== 'granted') {
         setStatus({ type: 'error', title: 'Location needed', description: 'Enable location to share with nearby users.' });
         return;
       }
 
-      let location;
+      let location: Location.LocationObject;
       try {
-        location = await Location.getLastKnownPositionAsync({});
-        if (!location) {
+        const fallbackKnown = await Location.getLastKnownPositionAsync({});
+        if (fallbackKnown) {
+          location = fallbackKnown;
+        } else {
           location = await Promise.race([
             Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+            new Promise<Location.LocationObject>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000)),
           ]);
         }
       } catch (err) {
@@ -203,9 +221,10 @@ export default function PostItem() {
       setOriginalPrice('');
       setDiscountedPrice('');
       setCurrency('USD');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Create Item Error:', error);
-      const serverMessage = error.response?.data?.error || error.message;
+      const typedError = error as ApiErrorLike;
+      const serverMessage = typedError.response?.data?.error || typedError.message;
       setStatus({ type: 'error', title: 'Post failed', description: serverMessage || 'Please try again.' });
     }
   };

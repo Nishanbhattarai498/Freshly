@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
 import { api } from '../services/api';
+import { connectSocket } from '../services/socket';
 
 export type ConversationMessage = {
   id: number;
@@ -51,13 +52,18 @@ type MessagesContextValue = {
 
 const MessagesContext = createContext<MessagesContextValue | undefined>(undefined);
 
-export const MessagesProvider = ({ children }) => {
+type MessagesProviderProps = {
+  children: ReactNode;
+};
+
+export const MessagesProvider = ({ children }: MessagesProviderProps) => {
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [unreadMap, setUnreadMap] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const { getToken, userId } = useAuth();
+  const lastRealtimeRefreshRef = useRef(0);
 
   const addMessage = useCallback((message: ConversationMessage) => {
     setMessages((prev) => [...prev, message]);
@@ -75,17 +81,25 @@ export const MessagesProvider = ({ children }) => {
     setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
   }, []);
 
-  const fetchMessages = useCallback(async (_conversationId: number) => {
+  const fetchMessages = useCallback(async (conversationId: number) => {
     setLoading(true);
     try {
-      // API call here
+      const token = await getToken();
+      const response = await api.get(`/messages/${conversationId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const nextMessages = Array.isArray(response?.data?.messages)
+        ? (response.data.messages as ConversationMessage[]).slice().reverse()
+        : [];
+      setMessages(nextMessages);
       setError(null);
     } catch (err) {
       setError(err);
+      setMessages([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getToken]);
 
   const fetchConversations = useCallback(async () => {
     setLoading(true);
@@ -114,6 +128,51 @@ export const MessagesProvider = ({ children }) => {
       setLoading(false);
     }
   }, [getToken, userId]);
+
+  const refreshFromRealtime = useCallback(() => {
+    const now = Date.now();
+    if (now - lastRealtimeRefreshRef.current < 750) {
+      return;
+    }
+    lastRealtimeRefreshRef.current = now;
+    void fetchConversations();
+  }, [fetchConversations]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const socket = connectSocket(userId);
+
+    const joinRooms = () => {
+      socket.emit('join_user', userId);
+      for (const conv of conversations) {
+        socket.emit('join_conversation', conv.id);
+      }
+    };
+
+    const onConnect = () => {
+      joinRooms();
+      refreshFromRealtime();
+    };
+
+    const onRealtimeUpdate = () => {
+      refreshFromRealtime();
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('new_message', onRealtimeUpdate);
+    socket.on('conversation_started', onRealtimeUpdate);
+
+    if (socket.connected) {
+      joinRooms();
+    }
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('new_message', onRealtimeUpdate);
+      socket.off('conversation_started', onRealtimeUpdate);
+    };
+  }, [userId, conversations, refreshFromRealtime]);
 
   const state: MessagesState = {
     conversations,
