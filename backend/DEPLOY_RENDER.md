@@ -138,30 +138,41 @@ Fix:
 - Verify model path loaded: inspect `model_path` in `GET /health`
 - Validate predictions: `POST /predict` with sample payload
 
-## 9) Prevent Free-Tier Sleep (Recommended)
+## 9) Prevent Free-Tier Sleep (Local Background Job)
 
-If your Render services sleep after inactivity (typically ~15 minutes), use a keepalive job every 10 minutes.
+If your Render services sleep after inactivity (typically ~15 minutes), run a local keepalive background job every 10 minutes.
 
-This repository now includes:
+This repository includes:
 
-- `.github/workflows/render-keepalive.yml`
+- `backend/scripts/render-keepalive.ps1`
 
 It pings:
 
-- `https://freshly-backend.onrender.com/health`
-- `https://freshly-backend.onrender.com/api/ml/status`
+- `https://freshly-backend-5vmz.onrender.com/health`
+- `https://freshly-backend-5vmz.onrender.com/api/ml/status`
 - `https://freshly-ml.onrender.com/health`
 
-### Why this helps
+Start it:
 
-- Keeps both backend and ML services warm.
-- Reduces 502/timeout spikes caused by cold starts.
-- Avoids forcing redeploy/restart loops.
+```powershell
+& "C:/Freshly/backend/scripts/render-keepalive.ps1"
+```
 
-### If your Render URLs are different
+Custom interval (seconds):
 
-Edit `.github/workflows/render-keepalive.yml` and replace the 3 URL values under `env`.
+```powershell
+& "C:/Freshly/backend/scripts/render-keepalive.ps1" -IntervalSeconds 600
+```
 
-### Important note
+If your Render URLs are different, pass them as parameters:
+
+```powershell
+& "C:/Freshly/backend/scripts/render-keepalive.ps1" \
+   -BackendHealthUrl "https://your-backend.onrender.com/health" \
+   -BackendMlStatusUrl "https://your-backend.onrender.com/api/ml/status" \
+   -MlHealthUrl "https://your-ml.onrender.com/health"
+```
+
+Important note:
 
 Free-tier cold starts can still occur occasionally. For stable real-time chat + ML API latency, prefer paid "always on" instances.
