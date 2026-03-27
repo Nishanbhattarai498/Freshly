@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard, Alert, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
 import { useSignUp, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Mail, Lock, Key, User } from 'lucide-react-native';
@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const getClerkErrorMessage = (err: unknown, fallback: string): string => {
   const maybeErr = err as { errors?: { message?: string }[]; message?: string };
@@ -19,6 +20,7 @@ export default function SignUp() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -27,7 +29,6 @@ export default function SignUp() {
   const [role, setRole] = useState('CUSTOMER');
   const [verifyMode, setVerifyMode] = useState(false);
   const [code, setCode] = useState('');
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,23 +36,6 @@ export default function SignUp() {
       router.replace("/(tabs)/home");
     }
   }, [isLoaded, userLoaded, isSignedIn, user, router]);
-
-  useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', (e) => {
-      if (Platform.OS === 'android') {
-        setKeyboardHeight(e.endCoordinates.height);
-      }
-    });
-
-    const hide = Keyboard.addListener('keyboardDidHide', () =>
-      setKeyboardHeight(0)
-    );
-
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
 
   if (!isLoaded || !userLoaded) {
     return (
@@ -137,10 +121,10 @@ export default function SignUp() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
       style={{
         flex: 1,
         backgroundColor: isDark ? '#0b1220' : '#f8fafc',
-        paddingBottom: Platform.OS === "android" ? keyboardHeight : 0,
       }}
     >
       <LinearGradient
@@ -156,6 +140,7 @@ export default function SignUp() {
             padding: 24,
           }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         >
         {/* Logo Section */}
         <View style={{ alignItems: 'center', marginBottom: 22 }}>
@@ -248,6 +233,8 @@ export default function SignUp() {
               onChangeText={setUserPassword}
               secureTextEntry
               icon={<Lock size={20} color="#6b7280" />}
+              onSubmitEditing={onSignUpPress}
+              returnKeyType="go"
             />
 
             {/* Role Selection */}
@@ -319,6 +306,8 @@ export default function SignUp() {
               onChangeText={setCode}
               keyboardType="number-pad"
               icon={<Key size={20} color="#6b7280" />}
+              onSubmitEditing={onPressVerify}
+              returnKeyType="done"
             />
 
             <Button

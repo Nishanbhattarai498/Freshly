@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, Image, Keyboard, Modal, Pressable, FlatList } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, Image, Modal, Pressable, FlatList } from 'react-native';
 import { useStore } from '../../store/index';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
@@ -8,6 +8,7 @@ import { CURRENCIES, getCurrencySymbol } from '../../utils/currencies';
 import { useColorScheme } from 'nativewind';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import { StatusPopup } from '../../components/ui/States';
@@ -41,6 +42,7 @@ export default function PostItem() {
   const { createItem, isLoading } = useStore();
   const router = useRouter();
   const { colorScheme } = useColorScheme();
+  const insets = useSafeAreaInsets();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -54,7 +56,6 @@ export default function PostItem() {
   const [expiryDate, setExpiryDate] = useState(new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0]); // Default 2 days
   const [imageUrl, setImageUrl] = useState(PRESET_IMAGES[0].url);
   const [category, setCategory] = useState('Vegetables');
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isCustomImage, setIsCustomImage] = useState(false);
   const [status, setStatus] = useState<PostStatus | null>(null);
 
@@ -62,30 +63,6 @@ export default function PostItem() {
   const quickDiscounts = [25, 50, 75];
 
   const CATEGORIES = ['Vegetables', 'Fruits', 'Bakery', 'Meals', 'Dairy', 'Other'];
-
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      (e) => {
-        if (Platform.OS === 'android') {
-            setKeyboardHeight(e.endCoordinates.height);
-        }
-      }
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-        'keyboardDidHide',
-        () => {
-            if (Platform.OS === 'android') {
-                setKeyboardHeight(0);
-            }
-        }
-    );
-
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
 
   const pickImage = async () => {
     Alert.alert('Select Image', 'Choose an option', [
@@ -232,10 +209,16 @@ export default function PostItem() {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
       className="flex-1 bg-white dark:bg-gray-900"
-      style={{ paddingBottom: Platform.OS === 'android' ? keyboardHeight : 0 }}
     >
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 180 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 180 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+      >
         <LinearGradient colors={['#0ea5e9', '#22c55e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className="px-6 pt-14 pb-10 rounded-b-3xl">
           <Text className="text-3xl font-extrabold text-white mb-2 leading-tight">Share Food</Text>
           <Text className="text-white/90 text-base leading-6">Keep good food in circulation. Add a clear title, photo, and pickup window.</Text>
@@ -521,6 +504,8 @@ export default function PostItem() {
                   placeholder="Search currency code or name"
                   placeholderTextColor={colorScheme === 'dark' ? '#9ca3af' : '#6b7280'}
                   className={`${colorScheme === 'dark' ? 'bg-gray-700 text-gray-100' : 'bg-gray-100 text-gray-900'} rounded-md px-3 py-2 border ${colorScheme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                 />
               </View>
 

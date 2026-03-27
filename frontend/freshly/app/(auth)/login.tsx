@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard, ScrollView, ActivityIndicator, Alert, useColorScheme } from 'react-native';
+import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, useColorScheme } from 'react-native';
 import { useSignIn, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Mail, Lock, ArrowRight, Key } from 'lucide-react-native';
@@ -7,6 +7,7 @@ import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const getClerkErrorMessage = (err: unknown, fallback: string): string => {
   const maybeErr = err as { errors?: { message?: string }[]; message?: string };
@@ -19,12 +20,12 @@ export default function Login() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
   const [userPassword, setUserPassword] = useState('');
   const [verifyMode, setVerifyMode] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [loading, setLoading] = useState(false); 
 
   useEffect(() => {
@@ -34,18 +35,6 @@ export default function Login() {
       router.replace("/(tabs)/home");
     }
   }, [userLoaded, isSignedIn, user, router]);
-
-  useEffect(() => {
-    const show = Keyboard.addListener("keyboardDidShow", (e) => {
-      if (Platform.OS === "android") setKeyboardHeight(e.endCoordinates.height);
-    });
-    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0));
-
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
 
   const requestLocationPermission = async () => {
     try {
@@ -148,7 +137,8 @@ export default function Login() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, backgroundColor: isDark ? '#0b1220' : '#f8fafc', paddingBottom: keyboardHeight }}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
+      style={{ flex: 1, backgroundColor: isDark ? '#0b1220' : '#f8fafc' }}
     >
       <LinearGradient
         colors={isDark ? ['#0b1220', '#052e2b'] : ['#e6fffb', '#dbeafe']}
@@ -156,7 +146,11 @@ export default function Login() {
         end={{ x: 1, y: 1 }}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 36 }}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 36 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        >
           <View style={{ paddingHorizontal: 24 }}>
             <View style={{ alignItems: 'center', marginBottom: 26 }}>
               <View style={{ width: 66, height: 66, borderRadius: 33, backgroundColor: isDark ? 'rgba(20,184,166,0.2)' : '#ccfbf1', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
@@ -191,12 +185,12 @@ export default function Login() {
               {!verifyMode ? (
                 <>
                   <InputField label="Email" value={email} onChangeText={setEmail} placeholder="example@mail.com" icon={<Mail size={20} color="#64748b" />} />
-                  <InputField label="Password" value={userPassword} onChangeText={setUserPassword} placeholder="Enter password" secureTextEntry icon={<Lock size={20} color="#64748b" />} />
+                  <InputField label="Password" value={userPassword} onChangeText={setUserPassword} placeholder="Enter password" secureTextEntry icon={<Lock size={20} color="#64748b" />} onSubmitEditing={onSignInPress} returnKeyType="go" />
                   <Button label="Login" onPress={onSignInPress} loading={loading} iconRight={<ArrowRight size={18} color="white" />} />
                 </>
               ) : (
                 <>
-                  <InputField label="Verification Code" value={verificationCode} onChangeText={setVerificationCode} placeholder="Enter email code" keyboardType="number-pad" icon={<Key size={20} color="#64748b" />} helperText="Check your email inbox for the latest code." />
+                  <InputField label="Verification Code" value={verificationCode} onChangeText={setVerificationCode} placeholder="Enter email code" keyboardType="number-pad" icon={<Key size={20} color="#64748b" />} helperText="Check your email inbox for the latest code." onSubmitEditing={handleVerification} returnKeyType="done" />
                   <Button label="Verify Account" onPress={handleVerification} loading={loading} />
                   <TouchableOpacity onPress={() => setVerifyMode(false)} style={{ marginTop: 15, alignItems: 'center' }}>
                     <Text style={{ color: isDark ? '#cbd5e1' : '#475569', fontWeight: '600' }}>Back to Login</Text>

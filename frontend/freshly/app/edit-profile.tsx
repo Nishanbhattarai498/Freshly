@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, ImagePlus, Trash2 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../services/api';
 import Button from '../components/ui/Button';
 
@@ -15,6 +16,7 @@ type MeResponse = {
 export default function EditProfileScreen() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [loading, setLoading] = useState(true);
@@ -143,18 +145,27 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <LinearGradient
-        colors={isDark ? ['#0f172a', '#064e3b'] : ['#dbeafe', '#dcfce7']}
-        className="px-6 pt-14 pb-8 rounded-b-[28px]"
+    <KeyboardAvoidingView
+      className="flex-1 bg-slate-50 dark:bg-slate-950"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        contentContainerStyle={{ paddingBottom: 120 }}
       >
-        <Text className="text-xs font-bold uppercase tracking-[2px] text-slate-700 dark:text-slate-200">Profile</Text>
-        <Text className="text-3xl font-black text-slate-900 dark:text-white mt-2">Edit Your Profile</Text>
-        <Text className="text-slate-700 dark:text-slate-300 mt-2">Keep your name and photo up to date.</Text>
-      </LinearGradient>
+        <LinearGradient
+          colors={isDark ? ['#0f172a', '#064e3b'] : ['#dbeafe', '#dcfce7']}
+          className="px-6 pt-14 pb-8 rounded-b-[28px]"
+        >
+          <Text className="text-xs font-bold uppercase tracking-[2px] text-slate-700 dark:text-slate-200">Profile</Text>
+          <Text className="text-3xl font-black text-slate-900 dark:text-white mt-2">Edit Your Profile</Text>
+          <Text className="text-slate-700 dark:text-slate-300 mt-2">Keep your name and photo up to date.</Text>
+        </LinearGradient>
 
-      <View className="px-6 mt-6">
-        <View className="rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+        <View className="px-6 mt-6">
+          <View className="rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <View className="items-center mb-5">
             <Image
               source={{ uri: avatarUrl || 'https://via.placeholder.com/160' }}
@@ -199,6 +210,7 @@ export default function EditProfileScreen() {
             onChangeText={setDisplayName}
             placeholder="Your display name"
             className="rounded-2xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-slate-900 mb-4"
+            returnKeyType="next"
           />
 
           <Text className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Avatar URL</Text>
@@ -207,12 +219,17 @@ export default function EditProfileScreen() {
             onChangeText={setAvatarUrl}
             placeholder="https://... or upload from gallery"
             className="rounded-2xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-slate-900 mb-5"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onSubmitEditing={save}
+            returnKeyType="done"
           />
 
           <Button label={saving ? 'Saving...' : 'Save Changes'} onPress={save} loading={saving} />
           {status ? <Text className="text-sm text-gray-600 dark:text-gray-300 mt-3">{status}</Text> : null}
         </View>
-      </View>
-    </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

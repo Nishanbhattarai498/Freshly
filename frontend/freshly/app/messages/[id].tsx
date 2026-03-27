@@ -7,6 +7,7 @@ import { connectSocket } from '../../services/socket';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
 import { SendHorizonal } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ChatMessage = {
   id: number;
@@ -59,6 +60,7 @@ export default function ConversationScreen() {
   const { getToken, userId, isLoaded } = useAuth();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
   const getTokenRef = useRef(getToken);
 
   useEffect(() => {
@@ -205,13 +207,27 @@ export default function ConversationScreen() {
 
   const sendMessage = useCallback(async () => {
     const content = input.trim();
-    if (!content || sending || !conversationId) return;
+    if (!content || sending || !conversationId || !userId) return;
 
     setSending(true);
+    const optimisticId = -Date.now();
+    const optimisticMessage: ChatMessage = {
+      id: optimisticId,
+      senderId: userId,
+      conversationId,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setInput('');
+
     try {
       const token = await getTokenWithTimeout();
       if (!token) {
         setError('Session unavailable. Please login again.');
+        setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
+        setInput(content);
         return;
       }
 
@@ -220,15 +236,23 @@ export default function ConversationScreen() {
         { content, type: 'TEXT' },
         { timeout: 12000, headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessages((prev) => [...prev, response.data as ChatMessage]);
-      setInput('');
+      const sentMessage = response.data as ChatMessage;
+      setMessages((prev) => {
+        const withoutOptimistic = prev.filter((msg) => msg.id !== optimisticId);
+        if (withoutOptimistic.some((msg) => msg.id === sentMessage.id)) {
+          return withoutOptimistic;
+        }
+        return [...withoutOptimistic, sentMessage];
+      });
       setError('');
     } catch (e) {
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
+      setInput(content);
       setError(getErrorMessage(e, 'Failed to send message'));
     } finally {
       setSending(false);
     }
-  }, [conversationId, getTokenWithTimeout, input, sending]);
+  }, [conversationId, getTokenWithTimeout, input, sending, userId]);
 
   if (!conversationId && !loading) {
     return (
@@ -258,6 +282,7 @@ export default function ConversationScreen() {
     <KeyboardAvoidingView
       className="flex-1 bg-white dark:bg-gray-950"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
     >
       <LinearGradient
         colors={isDark ? ['#0f172a', '#064e3b'] : ['#dbeafe', '#dcfce7']}
@@ -289,6 +314,12 @@ export default function ConversationScreen() {
         data={messages}
         keyExtractor={(item, idx) => String(item?.id ?? idx)}
         contentContainerStyle={{ padding: 16, paddingBottom: 96, paddingTop: 14 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        removeClippedSubviews
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={10}
         renderItem={({ item }) => {
           const mine = item?.senderId === userId;
           return (
@@ -315,6 +346,11 @@ export default function ConversationScreen() {
           placeholder="Type a message"
           placeholderTextColor="#9ca3af"
           className="flex-1 px-4 py-3 rounded-2xl bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700"
+          autoCorrect
+          autoCapitalize="sentences"
+          returnKeyType="send"
+          blurOnSubmit={false}
+          onSubmitEditing={sendMessage}
         />
         <TouchableOpacity
           className="ml-2 w-12 h-12 rounded-2xl bg-emerald-600 items-center justify-center"

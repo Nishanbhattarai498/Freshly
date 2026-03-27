@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Search, UserRound, Package2, Sparkles } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
@@ -110,6 +110,9 @@ export default function SearchScreen() {
             placeholder={mode === 'items' ? 'Search items, categories, locations...' : 'Search people by name or email...'}
             placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
             className="flex-1 ml-3 text-[15px] text-gray-900 dark:text-white"
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
           />
         </View>
 
@@ -134,6 +137,8 @@ export default function SearchScreen() {
           data={filteredItems}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           ListEmptyComponent={
             <View className="items-center mt-20">
               {loadingItems ? <ActivityIndicator color="#10b981" /> : <Package2 size={42} color={isDark ? '#64748b' : '#94a3b8'} />}
@@ -161,6 +166,8 @@ export default function SearchScreen() {
           data={users}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           ListEmptyComponent={
             <View className="items-center mt-20">
               {loadingUsers ? <ActivityIndicator color="#10b981" /> : <UserRound size={42} color={isDark ? '#64748b' : '#94a3b8'} />}
