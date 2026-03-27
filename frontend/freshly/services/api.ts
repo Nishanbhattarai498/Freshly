@@ -2,6 +2,14 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+type TokenProvider = () => Promise<string | null>;
+
+let tokenProvider: TokenProvider = async () => null;
+
+export const setAuthTokenProvider = (provider: TokenProvider) => {
+  tokenProvider = provider;
+};
+
 const normalizeBaseUrl = (baseUrl: string): string => {
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 };
@@ -37,8 +45,17 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use(
-  (config) => {
-    // Add token to headers if available
+  async (config) => {
+    // Inject Clerk JWT automatically for protected endpoints.
+    if (!config.headers?.Authorization) {
+      const token = await tokenProvider();
+      if (token) {
+        config.headers = {
+          ...config.headers,
+          Authorization: `Bearer ${token}`,
+        };
+      }
+    }
     return config;
   },
   (error) => {
@@ -51,6 +68,13 @@ api.interceptors.response.use(
   (error) => {
     if (error?.message === 'Network Error') {
       console.error('Network Error: unable to reach backend', {
+        baseURL: API_URL,
+        method: error?.config?.method,
+        url: error?.config?.url,
+      });
+    }
+    if (error?.response?.status === 401) {
+      console.error('Unauthorized request (401)', {
         baseURL: API_URL,
         method: error?.config?.method,
         url: error?.config?.url,

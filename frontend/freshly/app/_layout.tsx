@@ -3,6 +3,8 @@ import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { MessagesProvider } from '../contexts/MessagesContext';
+import '../global.css';
+import { setAuthTokenProvider } from '../services/api';
 
 const tokenCache = {
   async getToken(key: string) {
@@ -28,9 +30,23 @@ if (!publishableKey) {
 }
 
 const InitialLayout = () => {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  useEffect(() => {
+    setAuthTokenProvider(async () => {
+      try {
+        return await getToken();
+      } catch {
+        return null;
+      }
+    });
+
+    return () => {
+      setAuthTokenProvider(async () => null);
+    };
+  }, [getToken]);
 
   useEffect(() => {
     if (!isLoaded) return;
