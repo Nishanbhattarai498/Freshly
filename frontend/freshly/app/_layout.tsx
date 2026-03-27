@@ -5,17 +5,17 @@ import * as SecureStore from 'expo-secure-store';
 import { MessagesProvider } from '../contexts/MessagesContext';
 
 const tokenCache = {
-  async getToken(key) {
+  async getToken(key: string) {
     try {
       return await SecureStore.getItemAsync(key);
-    } catch (_err) {
+    } catch {
       return null;
     }
   },
-  async saveToken(key, value) {
+  async saveToken(key: string, value: string) {
     try {
       return await SecureStore.setItemAsync(key, value);
-    } catch (_err) {
+    } catch {
       return;
     }
   },

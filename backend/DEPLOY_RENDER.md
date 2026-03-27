@@ -5,14 +5,20 @@ This guide deploys Freshly using:
 - Render Web Service for Node backend (`backend/`)
 - Render Web Service for Python ML API (`backend/ml/service/`)
 
-## 1) Create PostgreSQL on Render
+## 1) Database (Neon or Render Postgres)
 
-1. In Render dashboard, click **New +** -> **PostgreSQL**.
-2. Name: `freshly-postgres`.
-3. Region: same as your web services.
-4. After creation, copy:
-   - Internal Database URL (best for services inside Render)
-   - External Database URL (for local tools if needed)
+Choose one:
+
+- **If you already use Neon (recommended in your current setup):**
+   1. Keep Neon as your DB provider.
+   2. Copy Neon `DATABASE_URL`.
+   3. Use that URL in Render backend environment variables.
+
+- **If you want Render Postgres instead:**
+   1. In Render dashboard, click **New +** -> **PostgreSQL**.
+   2. Name: `freshly-postgres`.
+   3. Region: same as your web services.
+   4. After creation, copy internal/external DB URLs.
 
 ## 2) Deploy Python ML service
 
@@ -26,8 +32,10 @@ This guide deploys Freshly using:
    - Start Command: `uvicorn app:app --host 0.0.0.0 --port $PORT`
 4. Add environment variables:
    - `MODEL_PATH=../best_food_condition_model.joblib`
+   - Optional: `LOG_LEVEL=INFO`
 5. Deploy.
 6. Verify:
+   - `GET https://freshly-ml.onrender.com/`
    - `GET https://freshly-ml.onrender.com/health`
    - `POST https://freshly-ml.onrender.com/predict`
 
@@ -93,3 +101,37 @@ If using Expo EAS, pass these as environment-specific values for production buil
 - Add webhook signature verification for Clerk webhooks.
 - Move large media payloads to object storage instead of DB/base64.
 - Use paid Render instance for stable Socket.IO uptime (avoids free-tier sleep).
+
+## 8) Troubleshooting logs on Render
+
+### A) `InconsistentVersionWarning` from scikit-learn
+
+Cause:
+- Model was trained with one scikit-learn version and loaded with a different one.
+
+Fix:
+- Keep ML dependencies pinned to training-compatible versions in `backend/ml/service/requirements.txt`.
+- Pin Python runtime with `backend/ml/service/runtime.txt`.
+
+### B) `No open ports detected, continuing to scan...`
+
+Meaning:
+- Render is scanning while service starts; often harmless if app binds quickly.
+
+Fix:
+- Keep start command exactly: `uvicorn app:app --host 0.0.0.0 --port $PORT`.
+- Keep a root endpoint (`/`) and health endpoint (`/health`) for easy checks.
+
+### C) `GET /` 404 noise in logs
+
+Cause:
+- Browser or platform probes hitting root path.
+
+Fix:
+- Return a simple JSON response on `/`.
+
+### D) Useful operational checks
+
+- Check uptime quickly: `GET /health`
+- Verify model path loaded: inspect `model_path` in `GET /health`
+- Validate predictions: `POST /predict` with sample payload

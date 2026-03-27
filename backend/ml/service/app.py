@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import logging
 
 import joblib
 import pandas as pd
@@ -23,6 +24,8 @@ class PredictionResponse(BaseModel):
 
 
 app = FastAPI(title="Freshly ML Service", version="1.0.0")
+logger = logging.getLogger("freshly.ml")
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = Path(os.getenv("MODEL_PATH", str(BASE_DIR.parent / "best_food_condition_model.joblib")))
@@ -32,9 +35,22 @@ model = None
 @app.on_event("startup")
 def load_model() -> None:
     global model
+    logger.info("Starting ML service")
+    logger.info("Loading model from %s", MODEL_PATH)
     if not MODEL_PATH.exists():
         raise RuntimeError(f"Model file not found: {MODEL_PATH}")
     model = joblib.load(MODEL_PATH)
+    logger.info("Model loaded successfully")
+
+
+@app.get("/")
+def root() -> dict:
+    return {
+        "service": "freshly-ml",
+        "status": "ok",
+        "health": "/health",
+        "predict": "/predict",
+    }
 
 
 @app.get("/health")
