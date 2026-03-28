@@ -44,8 +44,19 @@ type NewMessageEvent = {
 };
 
 const getErrorMessage = (e: unknown, fallback: string) => {
-  const err = e as { response?: { data?: { error?: string } }; message?: string };
-  return err?.response?.data?.error || err?.message || fallback;
+  const err = e as { response?: { data?: { error?: string; message?: string } }; message?: string; code?: string };
+
+  // Axios network error
+  if ((err as any)?.message === 'Network Error' || (err as any)?.code === 'ECONNABORTED') {
+    return 'Unable to reach server. Check your connection or try again.';
+  }
+
+  // HTTP response error with structured body
+  if (err?.response?.data?.error) return err.response.data.error;
+  if (err?.response?.data?.message) return err.response.data.message;
+
+  // Generic message fallback
+  return err?.message || fallback;
 };
 
 export default function ConversationScreen() {
@@ -178,6 +189,15 @@ export default function ConversationScreen() {
       socket.emit('join_conversation', conversationId);
     };
 
+    const onSocketConnectError = (err: unknown) => {
+      console.error('Socket connection error', err);
+      setError('Realtime connection failed. Updates may be delayed.');
+    };
+
+    const onSocketDisconnect = () => {
+      setError((prev) => prev || 'Realtime disconnected.');
+    };
+
     const onIncomingMessage = (payload: unknown) => {
       const parsedPayload = payload as NewMessageEvent;
       const incomingMessage = parsedPayload?.message;
@@ -193,15 +213,23 @@ export default function ConversationScreen() {
 
     socket.on('connect', joinConversation);
     socket.on('new_message', onIncomingMessage);
+    socket.on('connect_error', onSocketConnectError as any);
+    socket.on('disconnect', onSocketDisconnect as any);
 
     if (socket.connected) {
       joinConversation();
     }
 
     return () => {
-      socket.emit('leave_conversation', conversationId);
+      try {
+        socket.emit('leave_conversation', conversationId);
+      } catch (e) {
+        // ignore
+      }
       socket.off('connect', joinConversation);
       socket.off('new_message', onIncomingMessage);
+      socket.off('connect_error', onSocketConnectError as any);
+      socket.off('disconnect', onSocketDisconnect as any);
     };
   }, [conversationId, userId]);
 
@@ -274,6 +302,14 @@ export default function ConversationScreen() {
       <View className="flex-1 justify-center items-center bg-white dark:bg-gray-950">
         <ActivityIndicator size="large" color="#10b981" />
         <Text className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading chat...</Text>
+        {error ? (
+          <>
+            <Text className="mt-2 text-xs text-rose-700 dark:text-rose-300">{error}</Text>
+            <TouchableOpacity onPress={loadConversation} className="mt-3 px-3 py-2 rounded-xl bg-white/85 dark:bg-slate-900/85 border border-slate-200 dark:border-slate-700">
+              <Text className="text-xs font-semibold text-slate-800 dark:text-slate-100">Retry</Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
       </View>
     );
   }
