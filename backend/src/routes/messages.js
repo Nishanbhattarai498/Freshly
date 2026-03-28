@@ -93,7 +93,9 @@ router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.auth.userId;
-
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({ error: 'Invalid conversation id' });
+    }
     const conv = await db.query.conversations.findFirst({
       where: eq(conversations.id, parseInt(id)),
       with: {
@@ -102,22 +104,24 @@ router.get('/:id', requireAuth, async (req, res) => {
         item: true,
       }
     });
-
-    if (!conv) return res.status(404).json({ error: 'Conversation not found' });
-
+    if (!conv) {
+      console.error(`[messages.js] Conversation not found: id=${id}`);
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
     if (conv.participant1Id !== userId && conv.participant2Id !== userId) {
+      console.error(`[messages.js] Unauthorized access: userId=${userId}, convId=${id}`);
       return res.status(403).json({ error: 'Unauthorized' });
     }
-
     const msgs = await db.query.messages.findMany({
       where: eq(messages.conversationId, parseInt(id)),
       orderBy: [desc(messages.createdAt)],
     });
-
     return res.json({ conversation: conv, messages: msgs });
   } catch (error) {
-    console.error('Get messages error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[messages.js] Get messages error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: error?.message || 'Unknown error' });
+    }
   }
 });
 

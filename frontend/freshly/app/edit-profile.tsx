@@ -213,18 +213,6 @@ export default function EditProfileScreen() {
             returnKeyType="next"
           />
 
-          <Text className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Avatar URL</Text>
-          <TextInput
-            value={avatarUrl}
-            onChangeText={setAvatarUrl}
-            placeholder="https://... or upload from gallery"
-            className="rounded-2xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-slate-900 mb-5"
-            autoCapitalize="none"
-            autoCorrect={false}
-            onSubmitEditing={save}
-            returnKeyType="done"
-          />
-
           <Button label={saving ? 'Saving...' : 'Save Changes'} onPress={save} loading={saving} />
           {status ? <Text className="text-sm text-gray-600 dark:text-gray-300 mt-3">{status}</Text> : null}
         </View>

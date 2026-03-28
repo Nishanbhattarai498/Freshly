@@ -113,14 +113,6 @@ export default function SettingsScreen() {
           {savingRole ? <Text className="text-xs text-gray-500 dark:text-gray-400 mt-2">Saving role...</Text> : null}
         </View>
 
-        <View className="rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-          <View className="flex-row items-center mb-3">
-            <MoonStar size={18} color="#8b5cf6" />
-            <Text className="text-gray-900 dark:text-white font-bold text-lg ml-2">Environment</Text>
-          </View>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">API: {process.env.EXPO_PUBLIC_API_URL || 'auto-detect'}</Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">Socket: {process.env.EXPO_PUBLIC_SOCKET_URL || 'auto-detect'}</Text>
-        </View>
       </View>
     </View>
   );
