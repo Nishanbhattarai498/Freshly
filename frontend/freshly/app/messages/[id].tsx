@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { api } from '../../services/api';
@@ -95,6 +95,7 @@ export default function ConversationScreen() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [otherUser, setOtherUser] = useState<ChatUser | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     if (!messages.length) return;
@@ -105,6 +106,27 @@ export default function ConversationScreen() {
 
     return () => clearTimeout(timer);
   }, [messages]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSubscription = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates?.height || 0);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 60);
+    });
+
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const getTokenWithTimeout = useCallback(async () => {
     const timeoutMs = 9000;
@@ -342,8 +364,8 @@ export default function ConversationScreen() {
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-white dark:bg-gray-950"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 18}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
     >
       <LinearGradient
         colors={isDark ? ['#0f172a', '#064e3b'] : ['#dbeafe', '#dcfce7']}
@@ -404,7 +426,10 @@ export default function ConversationScreen() {
 
       <View
         className="px-4 pt-3 border-t border-gray-200 dark:border-gray-800 flex-row items-center"
-        style={{ paddingBottom: Math.max(insets.bottom + 18, 28) }}
+        style={{
+          paddingBottom: Math.max(insets.bottom + 18, 28),
+          marginBottom: Platform.OS === 'android' ? Math.max(keyboardHeight - insets.bottom, 0) : 0,
+        }}
       >
         <TextInput
           value={input}
