@@ -474,4 +474,28 @@ router.put('/me/role', requireAuth, async (req, res) => {
   }
 });
 
+// Save Expo push token for device notifications
+router.put('/me/push-token', requireAuth, async (req, res) => {
+  try {
+    const userId = req.auth.userId;
+    const schema = z.object({
+      expoPushToken: z.string().regex(/^ExponentPushToken\[[^\]]+\]$/),
+    });
+
+    const result = schema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: 'Invalid Expo push token' });
+    }
+
+    await db.update(users)
+      .set({ expoPushToken: result.data.expoPushToken })
+      .where(eq(users.id, userId));
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Update push token error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

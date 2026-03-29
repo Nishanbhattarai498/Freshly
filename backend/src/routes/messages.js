@@ -4,6 +4,7 @@ import { db } from '../db/index.js';
 import { conversations, messages, users, items, notifications } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { eq, or, and, desc } from 'drizzle-orm';
+import { sendPushNotification } from '../services/push.js';
 
 const router = express.Router();
 
@@ -194,6 +195,7 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
 
     const receiverId = conv.participant1Id === userId ? conv.participant2Id : conv.participant1Id;
     const sender = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    const receiver = await db.query.users.findFirst({ where: eq(users.id, receiverId) });
 
     await db.insert(notifications).values({
       userId: receiverId,
@@ -220,6 +222,28 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
       }
     } catch (emitErr) {
       console.error('Error emitting new_message event', emitErr);
+    }
+
+    if (receiver?.expoPushToken) {
+      const pushResult = await sendPushNotification({
+        to: receiver.expoPushToken,
+        title: sender?.displayName || 'Freshly',
+        body: type === 'TEXT' ? content : 'Sent you a message',
+        data: {
+          target: `/messages/${conv.id}`,
+          conversationId: String(conv.id),
+          senderId: userId,
+          type: 'MESSAGE',
+        },
+      });
+
+      if (!pushResult.ok && !pushResult.skipped) {
+        console.warn('Push notification send failed', {
+          conversationId: conv.id,
+          receiverId,
+          reason: pushResult.reason,
+        });
+      }
     }
 
     return res.json(msg);

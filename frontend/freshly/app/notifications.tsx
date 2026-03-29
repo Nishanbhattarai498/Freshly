@@ -6,6 +6,7 @@ import { Bell, CheckCheck, MessageCircle, ShieldCheck } from 'lucide-react-nativ
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../services/api';
 import { formatDistanceToNow } from 'date-fns';
+import { getStoredPushToken, isPushSupported, registerForPushNotificationsAsync } from '../services/pushNotifications';
 
 type AppNotification = {
   id: number;
@@ -33,6 +34,7 @@ export default function NotificationsScreen() {
   const [markingAll, setMarkingAll] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [pushEnabled, setPushEnabled] = useState<'checking' | 'enabled' | 'disabled'>('checking');
 
   const unreadCount = useMemo(() => items.filter((i) => !i.read).length, [items]);
   const visibleItems = useMemo(
@@ -56,6 +58,15 @@ export default function NotificationsScreen() {
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
+
+  useEffect(() => {
+    const loadPushState = async () => {
+      const token = await getStoredPushToken();
+      setPushEnabled(token ? 'enabled' : 'disabled');
+    };
+
+    void loadPushState();
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -88,6 +99,12 @@ export default function NotificationsScreen() {
     } finally {
       setMarkingAll(false);
     }
+  };
+
+  const enablePushNotifications = async () => {
+    setPushEnabled('checking');
+    const token = await registerForPushNotificationsAsync();
+    setPushEnabled(token ? 'enabled' : 'disabled');
   };
 
   return (
@@ -127,6 +144,34 @@ export default function NotificationsScreen() {
           })}
         </View>
       </LinearGradient>
+
+      <View className="px-4 pt-4">
+        <View className="rounded-2xl border border-sky-100 dark:border-sky-900 bg-white dark:bg-slate-900 px-4 py-4">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 pr-3">
+              <Text className="text-sm font-bold text-slate-900 dark:text-white">Push Notifications</Text>
+              <Text className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                {!isPushSupported()
+                  ? 'Remote push notifications need a development build or APK, not Expo Go.'
+                  : pushEnabled === 'enabled'
+                  ? 'Enabled on this device.'
+                  : pushEnabled === 'checking'
+                    ? 'Checking notification permission...'
+                    : 'Tap enable to allow notifications on this device.'}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => void enablePushNotifications()}
+              className={`px-4 py-2 rounded-full ${pushEnabled === 'enabled' ? 'bg-emerald-100 dark:bg-emerald-900/40' : !isPushSupported() ? 'bg-slate-300 dark:bg-slate-700' : 'bg-sky-600'}`}
+              disabled={!isPushSupported()}
+            >
+              <Text className={`text-xs font-bold ${pushEnabled === 'enabled' ? 'text-emerald-700 dark:text-emerald-300' : !isPushSupported() ? 'text-slate-500 dark:text-slate-300' : 'text-white'}`}>
+                {!isPushSupported() ? 'Use APK' : pushEnabled === 'enabled' ? 'Enabled' : pushEnabled === 'checking' ? 'Checking' : 'Enable'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
 
       {loading ? (
         <View className="flex-1 items-center justify-center">

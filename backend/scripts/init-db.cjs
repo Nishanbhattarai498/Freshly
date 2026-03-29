@@ -41,9 +41,12 @@ CREATE TABLE IF NOT EXISTS users (
   email text NOT NULL UNIQUE,
   display_name text,
   avatar_url text,
+  expo_push_token text,
   role user_role NOT NULL DEFAULT 'CUSTOMER',
   created_at timestamp DEFAULT now()
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS expo_push_token text;
 
 CREATE TABLE IF NOT EXISTS items (
   id serial PRIMARY KEY,

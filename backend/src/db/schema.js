@@ -17,6 +17,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   displayName: text('display_name'),
   avatarUrl: text('avatar_url'),
+  expoPushToken: text('expo_push_token'),
   role: userRoleEnum('role').default('CUSTOMER').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
