@@ -46,7 +46,7 @@ const resolveHost = () => {
 };
 
 const API_URL = resolveHost();
-const SERVER_ROOT_URL = API_URL.replace(/\/api$/, '');
+export const SERVER_ROOT_URL = API_URL.replace(/\/api$/, '');
 console.log(`[api] resolved API_URL=${API_URL} SERVER_ROOT_URL=${SERVER_ROOT_URL}`);
 
 type RetryableConfig = AxiosRequestConfig & {

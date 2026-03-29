@@ -55,6 +55,28 @@ const UNITS = ['pcs', 'kg', 'bunch', 'box'];
 const QUICK_EXPIRY = [1, 2, 3, 5];
 const QUICK_DISCOUNTS = [25, 50, 75];
 const QUICK_TAGS = ['Fresh today', 'Pickup ASAP', 'Best for families'];
+const QUICK_TIMES = ['09:00', '12:00', '18:00', '21:00'];
+
+const combineLocalDateTime = (dateValue: string, timeValue: string) => {
+  const normalizedTime = /^\d{2}:\d{2}$/.test(timeValue) ? timeValue : '18:00';
+  const combined = new Date(`${dateValue}T${normalizedTime}:00`);
+  if (Number.isNaN(combined.getTime())) {
+    return new Date(`${dateValue}T18:00:00`).toISOString();
+  }
+  return combined.toISOString();
+};
+
+const formatExpiryPreview = (dateValue: string, timeValue: string) => {
+  const combined = new Date(`${dateValue}T${timeValue || '18:00'}:00`);
+  if (Number.isNaN(combined.getTime())) return `${dateValue} · ${timeValue || '18:00'}`;
+  return combined.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
 
 const Chip = ({ label, selected = false, onPress }: ChipProps) => (
   <TouchableOpacity
@@ -95,6 +117,7 @@ export default function PostItem() {
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [currencyQuery, setCurrencyQuery] = useState('');
   const [expiryDate, setExpiryDate] = useState(new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0]);
+  const [expiryTime, setExpiryTime] = useState('18:00');
   const [imageUrl, setImageUrl] = useState(PRESET_IMAGES[0].url);
   const [category, setCategory] = useState('Vegetables');
   const [isCustomImage, setIsCustomImage] = useState(false);
@@ -217,7 +240,7 @@ export default function PostItem() {
         description,
         quantity: parseInt(quantity, 10),
         unit,
-        expiryDate: new Date(expiryDate).toISOString(),
+        expiryDate: combineLocalDateTime(expiryDate, expiryTime),
         imageUrl,
         category,
         originalPrice: originalPrice ? parseFloat(originalPrice) : undefined,
@@ -244,6 +267,7 @@ export default function PostItem() {
       setDiscountedPrice('');
       setCurrency('USD');
       setExpiryDate(new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0]);
+      setExpiryTime('18:00');
       setImageUrl(PRESET_IMAGES[0].url);
       setCategory('Vegetables');
       setUnit('pcs');
@@ -309,7 +333,7 @@ export default function PostItem() {
             </View>
             <View className="flex-1 rounded-[22px] bg-white/70 dark:bg-white/10 px-4 py-3 ml-2 border border-white/40 dark:border-white/10">
               <Text className="text-xs font-semibold uppercase tracking-[1.5px] text-gray-500 dark:text-gray-400">Best Before</Text>
-              <Text className="text-base font-bold text-gray-900 dark:text-white mt-1">{expiryDate}</Text>
+              <Text className="text-base font-bold text-gray-900 dark:text-white mt-1">{formatExpiryPreview(expiryDate, expiryTime)}</Text>
             </View>
           </View>
         </LinearGradient>
@@ -456,6 +480,15 @@ export default function PostItem() {
               placeholder="YYYY-MM-DD"
             />
 
+            <InputField
+              label="Expiry Time"
+              icon={<Clock3 size={20} color="#7a8a9d" />}
+              value={expiryTime}
+              onChangeText={setExpiryTime}
+              placeholder="HH:MM"
+              helperText="Use 24-hour time like 09:00 or 18:30."
+            />
+
             <View className="flex-row items-center justify-between mb-2">
               <Text className="text-xs font-semibold uppercase tracking-[1.5px] text-gray-500 dark:text-gray-400">Quick expiry</Text>
               <View className="flex-row items-center">
@@ -470,6 +503,16 @@ export default function PostItem() {
                   <Chip key={days} label={`${days} day${days > 1 ? 's' : ''}`} selected={expiryDate === target} onPress={() => setExpiryDate(target)} />
                 );
               })}
+            </View>
+
+            <View className="flex-row items-center justify-between mt-4 mb-2">
+              <Text className="text-xs font-semibold uppercase tracking-[1.5px] text-gray-500 dark:text-gray-400">Quick times</Text>
+              <Text className="text-xs text-gray-500 dark:text-gray-400">Common pickup cutoffs</Text>
+            </View>
+            <View className="flex-row flex-wrap">
+              {QUICK_TIMES.map((time) => (
+                <Chip key={time} label={time} selected={expiryTime === time} onPress={() => setExpiryTime(time)} />
+              ))}
             </View>
           </SectionCard>
         </View>

@@ -5,6 +5,7 @@ export interface Item {
   id: number;
   title: string;
   description: string;
+  createdAt?: string;
   quantity: number;
   unit: string;
   expiryDate: string;

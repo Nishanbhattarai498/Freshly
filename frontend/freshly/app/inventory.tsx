@@ -19,6 +19,19 @@ const safeDate = (value?: string) => {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
+const safeDateTime = (value?: string) => {
+  if (!value) return 'Unknown';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
+
 const getStatusTone = (status: Item['status']) => {
   switch (status) {
     case 'CLAIMED':
@@ -259,6 +272,10 @@ export default function InventoryScreen() {
                           {safeDate(item.expiryDate)}
                         </Text>
                       </View>
+
+                      <Text style={{ color: isDark ? '#94a3b8' : '#64748b', marginTop: 8, fontSize: 12 }}>
+                        Posted {safeDateTime(item.createdAt)} · Expires {safeDateTime(item.expiryDate)}
+                      </Text>
                     </View>
                   </View>
 

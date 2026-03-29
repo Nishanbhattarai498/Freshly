@@ -14,6 +14,10 @@ type FoundUser = {
   email?: string;
   avatarUrl?: string;
   role?: 'SHOPKEEPER' | 'CUSTOMER';
+  rating?: {
+    average: number;
+    count: number;
+  };
 };
 
 const getSearchText = (item: Item) => {
@@ -207,18 +211,29 @@ export default function SearchScreen() {
           }
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => startConversation(item.id)}
-              className="mb-3 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 flex-row items-center shadow-sm"
+              onPress={() => router.push(`/users/${item.id}`)}
+              className="mb-3 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 shadow-sm"
             >
+              <View className="flex-row items-center">
               <Image source={{ uri: item.avatarUrl || 'https://via.placeholder.com/80' }} className="w-12 h-12 rounded-full" />
               <View className="flex-1 ml-3">
                 <Text className="font-bold text-gray-900 dark:text-white" numberOfLines={1}>{item.displayName || 'Unknown user'}</Text>
                 <Text className="text-xs text-gray-500 dark:text-gray-400" numberOfLines={1}>{item.email || 'No email'}</Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {item.role === 'SHOPKEEPER' ? 'Shopkeeper profile' : 'Community member'}
+                </Text>
               </View>
-              <View className="flex-row items-center px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+              <View className="flex-row items-center px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80">
+                <Text className="text-slate-700 dark:text-slate-100 text-xs font-semibold">View profile</Text>
+              </View>
+              </View>
+              <Pressable
+                onPress={() => startConversation(item.id)}
+                className="mt-3 flex-row items-center self-start px-3 py-2 rounded-full bg-emerald-100 dark:bg-emerald-900/30"
+              >
                 <Sparkles size={13} color="#059669" />
                 <Text className="ml-1 text-emerald-700 dark:text-emerald-200 text-xs font-semibold">Message</Text>
-              </View>
+              </Pressable>
             </Pressable>
           )}
         />

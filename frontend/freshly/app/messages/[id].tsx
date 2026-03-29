@@ -59,6 +59,16 @@ const getErrorMessage = (e: unknown, fallback: string) => {
   return err?.message || fallback;
 };
 
+const formatMessageTime = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
+
 export default function ConversationScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -370,6 +380,7 @@ export default function ConversationScreen() {
       >
         {messages.length ? messages.map((item, idx) => {
           const mine = item?.senderId === userId;
+          const messageTime = formatMessageTime(item?.createdAt);
           return (
             <View key={String(item?.id ?? idx)} className={`mb-3 ${mine ? 'items-end' : 'items-start'}`}>
               <View className={`max-w-[86%] px-4 py-2.5 rounded-2xl ${mine ? 'bg-emerald-600 border border-emerald-500' : 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}>
@@ -377,6 +388,11 @@ export default function ConversationScreen() {
                   {item?.content || '(media message)'}
                 </Text>
               </View>
+              {messageTime ? (
+                <Text className={`mt-1 text-[11px] ${mine ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                  {messageTime}
+                </Text>
+              ) : null}
             </View>
           );
         }) : (

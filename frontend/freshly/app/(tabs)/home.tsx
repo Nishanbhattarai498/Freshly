@@ -43,6 +43,13 @@ const safeFormattedDate = (value?: string) => {
   return format(date, 'MMM d, yyyy');
 };
 
+const safeFormattedDateTime = (value?: string) => {
+  if (!value) return 'Unknown';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return format(date, 'MMM d, yyyy · h:mm a');
+};
+
 export default function Home() {
   const [items, setItems] = React.useState<Item[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -203,7 +210,7 @@ export default function Home() {
             className="text-[11px]"
             style={{ color: isDark ? 'rgba(248,250,252,0.8)' : '#4b5563' }}
           >
-            {safeRelativeDate(item.expiryDate)}
+            Posted {safeFormattedDateTime(item.createdAt)}
           </Text>
         </View>
       </View>
@@ -287,7 +294,14 @@ export default function Home() {
         <View className="flex-row items-center mt-2">
           <Calendar size={14} color={colorScheme === 'dark' ? '#a5b4fc' : '#1d4ed8'} />
           <Text className="text-gray-800 dark:text-gray-100 text-sm ml-2">
-            Expires {safeFormattedDate(item.expiryDate)}
+            Expires {safeFormattedDateTime(item.expiryDate)}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center mt-2">
+          <Clock size={14} color={colorScheme === 'dark' ? '#7dd3fc' : '#0369a1'} />
+          <Text className="text-gray-700 dark:text-gray-200 text-sm ml-2">
+            Posted {safeRelativeDate(item.createdAt)}
           </Text>
         </View>
 

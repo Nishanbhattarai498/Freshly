@@ -40,7 +40,10 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [userPassword, setUserPassword] = useState('');
   const [verifyMode, setVerifyMode] = useState(false);
+  const [secondFactorMode, setSecondFactorMode] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
+  const [secondFactorCode, setSecondFactorCode] = useState('');
+  const [secondFactorStrategy, setSecondFactorStrategy] = useState<'totp' | 'backup_code' | 'email_code' | 'phone_code'>('totp');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -83,6 +86,7 @@ export default function Login() {
         router.replace('/(tabs)/home');
         await requestLocationPermission();
       } else if (result.status === 'needs_first_factor') {
+        setSecondFactorMode(false);
         const emailFactor = result.supportedFirstFactors?.find((factor) => factor.strategy === 'email_code');
 
         if (emailFactor && 'emailAddressId' in emailFactor && emailFactor.emailAddressId) {
@@ -93,6 +97,35 @@ export default function Login() {
         }
         setVerifyMode(true);
         Alert.alert('Verification needed', 'We sent a login code to your email. Enter it to finish signing in.');
+      } else if (result.status === 'needs_second_factor') {
+        setVerifyMode(false);
+        setSecondFactorCode('');
+        const preferredFactor =
+          result.supportedSecondFactors?.find((factor) => factor.strategy === 'totp') ||
+          result.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code') ||
+          result.supportedSecondFactors?.find((factor) => factor.strategy === 'phone_code') ||
+          result.supportedSecondFactors?.find((factor) => factor.strategy === 'backup_code');
+
+        const strategy = (preferredFactor?.strategy || 'totp') as 'totp' | 'backup_code' | 'email_code' | 'phone_code';
+        setSecondFactorStrategy(strategy);
+
+        if (strategy === 'email_code' && preferredFactor && 'emailAddressId' in preferredFactor && preferredFactor.emailAddressId) {
+          await signIn.prepareSecondFactor({ strategy: 'email_code', emailAddressId: preferredFactor.emailAddressId });
+        }
+
+        if (strategy === 'phone_code' && preferredFactor && 'phoneNumberId' in preferredFactor && preferredFactor.phoneNumberId) {
+          await signIn.prepareSecondFactor({ strategy: 'phone_code', phoneNumberId: preferredFactor.phoneNumberId });
+        }
+
+        setSecondFactorMode(true);
+        Alert.alert(
+          'Second verification needed',
+          strategy === 'totp'
+            ? 'Enter the 6-digit code from your authenticator app to finish signing in.'
+            : strategy === 'backup_code'
+              ? 'Enter one of your backup codes to finish signing in.'
+              : 'We sent a second verification code. Enter it to finish signing in.'
+        );
       } else {
         Alert.alert('Login step required', getStatusMessage(result.status ?? undefined));
       }
@@ -132,6 +165,38 @@ export default function Login() {
     }
   };
 
+  const handleSecondFactorVerification = async () => {
+    if (!signIn || !setActive) {
+      Alert.alert('Verification unavailable', 'Authentication service is still loading. Please try again.');
+      return;
+    }
+
+    if (!secondFactorCode.trim()) {
+      Alert.alert('Missing Code', 'Enter your second verification code.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await signIn.attemptSecondFactor({
+        strategy: secondFactorStrategy,
+        code: secondFactorCode.trim(),
+      });
+
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        router.replace('/(tabs)/home');
+        await requestLocationPermission();
+      } else {
+        Alert.alert('Verification step required', getStatusMessage(result.status ?? undefined));
+      }
+    } catch (err: unknown) {
+      Alert.alert('Verification Failed', getClerkErrorMessage(err, 'Please try your verification code again.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const onResendPress = async () => {
     if (!isLoaded || !signIn) return;
     setLoading(true);
@@ -145,6 +210,34 @@ export default function Login() {
     } catch (err) {
       console.log('Resend error:', err);
       Alert.alert('Error', getClerkErrorMessage(err, 'Failed to resend code.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onResendSecondFactorPress = async () => {
+    if (!isLoaded || !signIn) return;
+    if (secondFactorStrategy !== 'email_code' && secondFactorStrategy !== 'phone_code') return;
+
+    setLoading(true);
+    try {
+      const factor = signIn.supportedSecondFactors?.find((entry) => entry.strategy === secondFactorStrategy);
+
+      if (!factor) {
+        throw new Error('Second factor not found');
+      }
+
+      if (secondFactorStrategy === 'email_code' && 'emailAddressId' in factor && factor.emailAddressId) {
+        await signIn.prepareSecondFactor({ strategy: 'email_code', emailAddressId: factor.emailAddressId });
+      } else if (secondFactorStrategy === 'phone_code' && 'phoneNumberId' in factor && factor.phoneNumberId) {
+        await signIn.prepareSecondFactor({ strategy: 'phone_code', phoneNumberId: factor.phoneNumberId });
+      } else {
+        throw new Error('Second factor destination is unavailable');
+      }
+
+      Alert.alert('Code Resent', 'A new second-factor code has been sent.');
+    } catch (err: unknown) {
+      Alert.alert('Resend Failed', getClerkErrorMessage(err, 'Failed to resend code.'));
     } finally {
       setLoading(false);
     }
@@ -176,10 +269,18 @@ export default function Login() {
             </View>
             <Text style={{ color: isDark ? '#99f6e4' : '#0f766e', fontSize: 12, fontWeight: '800', letterSpacing: 2.5 }}>WELCOME BACK</Text>
             <Text style={{ fontSize: 34, fontWeight: '900', color: isDark ? '#f8fafc' : '#0f172a', marginTop: 8, lineHeight: 40 }}>
-              {verifyMode ? 'Finish signing in.' : 'Login to your food-saving network.'}
+              {verifyMode ? 'Finish signing in.' : secondFactorMode ? 'Complete your secure sign-in.' : 'Login to your food-saving network.'}
             </Text>
             <Text style={{ color: isDark ? '#b6c4d3' : '#516072', marginTop: 12, fontSize: 16, lineHeight: 24 }}>
-              {verifyMode ? 'We sent a code to your inbox. Enter it below to continue.' : 'Pick up where you left off, browse nearby items, and keep the conversation moving.'}
+              {verifyMode
+                ? 'We sent a code to your inbox. Enter it below to continue.'
+                : secondFactorMode
+                  ? secondFactorStrategy === 'totp'
+                    ? 'Open your authenticator app and enter the latest 6-digit code.'
+                    : secondFactorStrategy === 'backup_code'
+                      ? 'Use one of your saved backup codes to complete sign-in.'
+                      : 'Enter the second verification code we just sent you.'
+                  : 'Pick up where you left off, browse nearby items, and keep the conversation moving.'}
             </Text>
           </View>
 
@@ -212,13 +313,13 @@ export default function Login() {
               })}
             </View>
 
-            {!verifyMode ? (
+            {!verifyMode && !secondFactorMode ? (
               <>
                 <InputField label="Email" value={email} onChangeText={setEmail} placeholder="example@mail.com" icon={<Mail size={20} color="#7a8a9d" />} />
                 <InputField label="Password" value={userPassword} onChangeText={setUserPassword} placeholder="Enter password" secureTextEntry icon={<Lock size={20} color="#7a8a9d" />} onSubmitEditing={onSignInPress} returnKeyType="go" />
                 <Button label="Login" onPress={onSignInPress} loading={loading} iconRight={<ArrowRight size={18} color="#ffffff" />} />
               </>
-            ) : (
+            ) : verifyMode ? (
               <>
                 <InputField label="Verification Code" value={verificationCode} onChangeText={setVerificationCode} placeholder="Enter email code" keyboardType="number-pad" icon={<Key size={20} color="#7a8a9d" />} helperText="Check your email inbox for the latest code." onSubmitEditing={handleVerification} returnKeyType="done" />
                 <Button label="Verify Account" onPress={handleVerification} loading={loading} />
@@ -227,6 +328,50 @@ export default function Login() {
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onResendPress} style={{ marginTop: 10, alignItems: 'center' }}>
                   <Text style={{ color: '#0f766e', fontWeight: '800' }}>Resend code</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <InputField
+                  label={secondFactorStrategy === 'backup_code' ? 'Backup Code' : 'Second-Factor Code'}
+                  value={secondFactorCode}
+                  onChangeText={setSecondFactorCode}
+                  placeholder={secondFactorStrategy === 'backup_code' ? 'Enter backup code' : 'Enter verification code'}
+                  keyboardType={secondFactorStrategy === 'backup_code' ? 'default' : 'number-pad'}
+                  icon={<Key size={20} color="#7a8a9d" />}
+                  helperText={
+                    secondFactorStrategy === 'totp'
+                      ? 'Use the code from Google Authenticator, Authy, or another authenticator app.'
+                      : secondFactorStrategy === 'backup_code'
+                        ? 'Backup codes are usually one-time recovery codes from your account security settings.'
+                        : 'Use the latest code we sent for your second verification step.'
+                  }
+                  onSubmitEditing={handleSecondFactorVerification}
+                  returnKeyType="done"
+                />
+                <Button
+                  label={secondFactorStrategy === 'backup_code' ? 'Use Backup Code' : 'Verify & Login'}
+                  onPress={handleSecondFactorVerification}
+                  loading={loading}
+                />
+                {secondFactorStrategy === 'totp' ? (
+                  <TouchableOpacity onPress={() => setSecondFactorStrategy('backup_code')} style={{ marginTop: 15, alignItems: 'center' }}>
+                    <Text style={{ color: '#0f766e', fontWeight: '800' }}>Use backup code instead</Text>
+                  </TouchableOpacity>
+                ) : null}
+                {(secondFactorStrategy === 'email_code' || secondFactorStrategy === 'phone_code') ? (
+                  <TouchableOpacity onPress={onResendSecondFactorPress} style={{ marginTop: 12, alignItems: 'center' }}>
+                    <Text style={{ color: '#0f766e', fontWeight: '800' }}>Resend second-factor code</Text>
+                  </TouchableOpacity>
+                ) : null}
+                <TouchableOpacity
+                  onPress={() => {
+                    setSecondFactorMode(false);
+                    setSecondFactorCode('');
+                  }}
+                  style={{ marginTop: 14, alignItems: 'center' }}
+                >
+                  <Text style={{ color: isDark ? '#dce9f4' : '#475569', fontWeight: '700' }}>Back to login</Text>
                 </TouchableOpacity>
               </>
             )}

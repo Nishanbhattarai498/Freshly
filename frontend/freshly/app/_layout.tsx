@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Slot, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import Constants from 'expo-constants';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { StatusBar, Text, View } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft } from 'lucide-react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { useColorScheme } from 'nativewind';
 import { MessagesProvider } from '../contexts/MessagesContext';
 import { setAuthTokenProvider } from '../services/api';
 import '../global.css';
@@ -35,7 +35,10 @@ const InitialLayout = () => {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const navigationState = useRootNavigationState();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const appBg = isDark ? '#06131f' : '#f4f8f6';
 
   useEffect(() => {
     setAuthTokenProvider(async () => {
@@ -52,7 +55,7 @@ const InitialLayout = () => {
   }, [getToken]);
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !navigationState?.key) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
@@ -62,55 +65,22 @@ const InitialLayout = () => {
     } else if (!isSignedIn && inTabsGroup) {
       router.replace('/(auth)/login');
     }
-  }, [isSignedIn, isLoaded, segments, router]);
-
-  const inAuthGroup = segments[0] === '(auth)';
-  const showBackButton = isLoaded && (inAuthGroup || isSignedIn);
-
-  const handleBackPress = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-
-    if (isSignedIn) {
-      router.replace('/(tabs)/home');
-      return;
-    }
-
-    router.replace('/(auth)/login');
-  };
+  }, [isSignedIn, isLoaded, navigationState?.key, segments, router]);
 
   return (
-    <View style={{ flex: 1 }}>
-      <Slot />
-      {showBackButton ? (
-        <TouchableOpacity
-          onPress={handleBackPress}
-          activeOpacity={0.88}
-          style={{
-            position: 'absolute',
-            top: Math.max(insets.top + 6, 16),
-            left: 16,
-            zIndex: 50,
-            width: 44,
-            height: 44,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 22,
-            backgroundColor: 'rgba(8,20,29,0.78)',
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.1)',
-            shadowColor: '#08111d',
-            shadowOpacity: 0.18,
-            shadowRadius: 10,
-            shadowOffset: { width: 0, height: 5 },
-            elevation: 6,
-          }}
-        >
-          <ChevronLeft size={20} color="#ffffff" />
-        </TouchableOpacity>
-      ) : null}
+    <View style={{ flex: 1, backgroundColor: appBg }}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={appBg}
+        translucent={false}
+      />
+      <SafeAreaView
+        edges={['top']}
+        style={{ backgroundColor: appBg }}
+      />
+      <View style={{ flex: 1, backgroundColor: appBg }}>
+        <Slot />
+      </View>
     </View>
   );
 };
@@ -128,10 +98,12 @@ export default function RootLayout() {
   }
 
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <MessagesProvider>
-        <InitialLayout />
-      </MessagesProvider>
-    </ClerkProvider>
+    <SafeAreaProvider>
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+        <MessagesProvider>
+          <InitialLayout />
+        </MessagesProvider>
+      </ClerkProvider>
+    </SafeAreaProvider>
   );
 }

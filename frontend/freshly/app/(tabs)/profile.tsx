@@ -11,13 +11,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ProfileData = {
+  id: string;
   avatarUrl?: string;
   displayName?: string;
   email?: string;
   address?: string;
+  role?: 'SHOPKEEPER' | 'CUSTOMER';
   stats: {
     shared: number;
     claimed: number;
+  };
+  rating?: {
+    average: number;
+    count: number;
   };
 };
 
@@ -74,7 +80,23 @@ export default function Profile() {
         api.get('/users/me'),
         api.get('/users/achievements'),
       ]);
-      setProfile(profileRes.data);
+      const baseProfile = profileRes.data as ProfileData;
+      let nextProfile = baseProfile;
+
+      if (baseProfile?.id) {
+        try {
+          const publicProfileRes = await api.get(`/users/${baseProfile.id}`);
+          const publicProfile = publicProfileRes.data as Partial<ProfileData>;
+          nextProfile = {
+            ...baseProfile,
+            rating: publicProfile.rating,
+          };
+        } catch (nestedError) {
+          console.error('Error fetching public profile rating:', nestedError);
+        }
+      }
+
+      setProfile(nextProfile);
       setAchievements(achievementRes.data);
       setImageError(false);
       setAuthError(null);
@@ -235,6 +257,34 @@ export default function Profile() {
             </Text>
           </View>
         </View>
+
+        {profile?.role === 'SHOPKEEPER' ? (
+          <View
+            className="mt-4 rounded-[24px] px-4 py-4"
+            style={{
+              backgroundColor: isDark ? 'rgba(8,20,29,0.84)' : 'rgba(255,255,255,0.92)',
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(148,163,184,0.14)' : 'rgba(15,23,42,0.08)',
+            }}
+          >
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text className="text-lg font-bold" style={{ color: isDark ? '#fff' : '#0f172a' }}>Shopkeeper Rating</Text>
+                <Text className="text-xs mt-1" style={{ color: isDark ? '#94a3b8' : '#475569' }}>
+                  {profile.rating?.count ? 'Based on customer reviews' : 'No customer ratings yet'}
+                </Text>
+              </View>
+              <View className="items-end">
+                <Text className="text-2xl font-black" style={{ color: isDark ? '#fff' : '#0f172a' }}>
+                  {profile.rating?.count ? profile.rating.average.toFixed(1) : '—'}
+                </Text>
+                <Text className="text-xs" style={{ color: isDark ? '#fcd34d' : '#b45309' }}>
+                  {profile.rating?.count ? `${profile.rating.count} review${profile.rating.count > 1 ? 's' : ''}` : 'No ratings yet'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
       </View>
 
       <View className="px-6 mb-8">

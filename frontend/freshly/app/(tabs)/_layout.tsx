@@ -26,6 +26,7 @@ export default function TabLayout() {
         inactive: isDark ? '#70859a' : '#8da0b0',
         inactiveText: isDark ? '#9eb3c7' : '#617284',
         bg,
+        sceneBg: isDark ? '#06131f' : '#f4f8f6',
         border: isDark ? 'rgba(148,163,184,0.15)' : 'rgba(15,23,42,0.08)',
         pill: isDark ? 'rgba(20,184,166,0.18)' : 'rgba(20,184,166,0.1)',
         pillBorder: isDark ? 'rgba(94,234,212,0.18)' : 'rgba(20,184,166,0.12)',
@@ -184,7 +185,7 @@ export default function TabLayout() {
           height: 78 + Math.max(insets.bottom, 8),
           paddingBottom: Math.max(insets.bottom, 8),
           borderRadius: 0,
-          backgroundColor: 'transparent',
+          backgroundColor: theme.sceneBg,
           borderWidth: 0,
           borderTopWidth: 0,
           borderTopColor: 'transparent',
@@ -194,6 +195,9 @@ export default function TabLayout() {
           shadowRadius: 10,
           elevation: 10,
           overflow: 'visible',
+        },
+        sceneStyle: {
+          backgroundColor: theme.sceneBg,
         },
         tabBarItemStyle: {
           alignItems: 'center',

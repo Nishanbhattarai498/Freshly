@@ -8,27 +8,41 @@ const endpoints = [
   { name: 'ml', url: mlHealthUrl },
 ];
 
+const RETRY_ATTEMPTS = 2;
+const RETRY_DELAY_MS = 4000;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const ping = async ({ name, url }) => {
-  const startedAt = Date.now();
+  for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt += 1) {
+    const startedAt = Date.now();
 
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'user-agent': 'freshly-render-keepalive/1.0',
-      },
-    });
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'user-agent': 'freshly-render-keepalive/1.0',
+          'cache-control': 'no-cache',
+        },
+      });
 
-    const durationMs = Date.now() - startedAt;
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      const durationMs = Date.now() - startedAt;
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      console.log(`[keepalive] ${name} OK attempt=${attempt} ${response.status} ${durationMs}ms ${url}`);
+      return { ok: true };
+    } catch (error) {
+      const durationMs = Date.now() - startedAt;
+      console.error(`[keepalive] ${name} FAIL attempt=${attempt} ${durationMs}ms ${url} :: ${error.message}`);
+
+      if (attempt < RETRY_ATTEMPTS) {
+        await sleep(RETRY_DELAY_MS);
+        continue;
+      }
+
+      return { ok: false, error };
     }
-
-    console.log(`[keepalive] ${name} OK ${response.status} ${durationMs}ms ${url}`);
-    return { ok: true };
-  } catch (error) {
-    const durationMs = Date.now() - startedAt;
-    console.error(`[keepalive] ${name} FAIL ${durationMs}ms ${url} :: ${error.message}`);
-    return { ok: false, error };
   }
 };
 

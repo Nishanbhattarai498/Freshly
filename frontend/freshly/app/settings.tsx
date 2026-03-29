@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SunMedium, UserRoundCog, ServerCog, FlaskConical } from 'lucide-react-native';
-import { api } from '../services/api';
+import { api, SERVER_ROOT_URL } from '../services/api';
 
 type MeResponse = {
   role?: 'SHOPKEEPER' | 'CUSTOMER';
@@ -13,6 +13,7 @@ type MlStatusResponse = {
   mode?: string;
   remoteHealth?: {
     available?: boolean;
+    reason?: string;
   };
   localFallback?: {
     enabled?: boolean;
@@ -28,32 +29,57 @@ export default function SettingsScreen() {
   const [savingRole, setSavingRole] = useState(false);
   const [systemStatus, setSystemStatus] = useState<{
     backend: 'checking' | 'online' | 'offline';
-    ml: 'checking' | 'online' | 'offline';
+    ml: 'checking' | 'online' | 'offline' | 'waking';
     mode: string;
     fallback: boolean;
+    mlReason: string | null;
   }>({
     backend: 'checking',
     ml: 'checking',
     mode: 'unknown',
     fallback: false,
+    mlReason: null,
   });
 
   const loadSystemStatus = async () => {
+    setSystemStatus((current) => ({
+      ...current,
+      backend: 'checking',
+      ml: 'checking',
+    }));
+
     try {
+      const backendHealthPromise = fetch(`${SERVER_ROOT_URL}/health`, {
+        method: 'GET',
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Backend health check failed with ${response.status}`);
+        }
+        return response.json();
+      });
+
       const [backendHealth, mlStatus] = await Promise.allSettled([
-        api.get('/health'),
+        backendHealthPromise,
         api.get('/ml/status'),
       ]);
 
       const backendOnline = backendHealth.status === 'fulfilled';
       const mlPayload = mlStatus.status === 'fulfilled' ? (mlStatus.value.data as MlStatusResponse) : null;
-      const mlOnline = Boolean(mlPayload?.remoteHealth?.available ?? false);
+      const mlHealthAvailable = Boolean(mlPayload?.remoteHealth?.available ?? false);
+      const mlReason = mlPayload?.remoteHealth?.reason || null;
+      const mlState: 'online' | 'offline' | 'waking' =
+        mlHealthAvailable
+          ? 'online'
+          : backendOnline && mlPayload?.mode === 'remote-python-service'
+            ? 'waking'
+            : 'offline';
 
       setSystemStatus({
         backend: backendOnline ? 'online' : 'offline',
-        ml: mlOnline ? 'online' : 'offline',
+        ml: mlState,
         mode: mlPayload?.mode || 'unknown',
         fallback: Boolean(mlPayload?.localFallback?.enabled),
+        mlReason,
       });
     } catch {
       setSystemStatus({
@@ -61,6 +87,7 @@ export default function SettingsScreen() {
         ml: 'offline',
         mode: 'unknown',
         fallback: false,
+        mlReason: null,
       });
     }
   };
@@ -186,7 +213,7 @@ export default function SettingsScreen() {
                 <FlaskConical size={14} color="#14b8a6" />
                 <Text className="ml-1 text-xs font-semibold uppercase tracking-[1.5px] text-gray-500 dark:text-gray-400">ML Service</Text>
               </View>
-              <Text className={`mt-2 text-base font-bold ${systemStatus.ml === 'online' ? 'text-emerald-600' : systemStatus.ml === 'offline' ? 'text-rose-500' : 'text-gray-500'}`}>
+              <Text className={`mt-2 text-base font-bold ${systemStatus.ml === 'online' ? 'text-emerald-600' : systemStatus.ml === 'waking' ? 'text-amber-500' : systemStatus.ml === 'offline' ? 'text-rose-500' : 'text-gray-500'}`}>
                 {systemStatus.ml}
               </Text>
             </View>
@@ -196,6 +223,11 @@ export default function SettingsScreen() {
           <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Local fallback {systemStatus.fallback ? 'enabled' : 'disabled'} if the hosted ML service is unavailable.
           </Text>
+          {systemStatus.mlReason ? (
+            <Text className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+              ML note: {systemStatus.mlReason}
+            </Text>
+          ) : null}
         </View>
 
       </View>
