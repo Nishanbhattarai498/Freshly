@@ -1,0 +1,52 @@
+services:
+  - name: freshly-backend
+    type: web
+    runtime: node
+    plan: free
+    rootDir: backend
+    autoDeployTrigger: commit
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: ML_SERVICE_URL
+        value: https://freshly-ml.onrender.com
+      - key: ML_REQUEST_TIMEOUT_MS
+        value: "25000"
+      - key: ML_RETRY_ATTEMPTS
+        value: "3"
+      - key: ML_RETRY_BACKOFF_MS
+        value: "1500"
+      - key: ML_HEALTH_TIMEOUT_MS
+        value: "8000"
+      - key: ML_COLD_START_TIMEOUT_MS
+        value: "70000"
+      - key: ML_COLD_START_POLL_INTERVAL_MS
+        value: "2500"
+
+  - name: freshly-ml
+    type: web
+    runtime: python
+    plan: free
+    rootDir: backend
+    autoDeployTrigger: commit
+    buildCommand: pip install -r ml/service/requirements.txt
+    startCommand: python -m uvicorn ml.service.app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+
+  - name: freshly-keepalive
+    type: cron
+    runtime: node
+    plan: starter
+    rootDir: backend
+    autoDeployTrigger: commit
+    buildCommand: npm install
+    startCommand: node scripts/render-keepalive.js
+    schedule: "*/10 * * * *"
+    envVars:
+      - key: BACKEND_HEALTH_URL
+        value: https://freshly-backend.onrender.com/health
+      - key: BACKEND_ML_STATUS_URL
+        value: https://freshly-backend.onrender.com/api/ml/status
+      - key: ML_HEALTH_URL
+        value: https://freshly-ml.onrender.com/health
