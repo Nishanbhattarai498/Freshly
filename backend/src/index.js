@@ -119,19 +119,6 @@ const start = async () => {
     server.listen(port, host, () => {
       console.log(`Server listening on ${host}:${port}`);
     });
-
-    // Keep-alive mechanism for Render Free Tier (optional)
-    const pingUrl = process.env.RENDER_EXTERNAL_URL ? `${process.env.RENDER_EXTERNAL_URL}/health` : null;
-    if (pingUrl) {
-      console.log(`⏰ Setting up keep-alive ping for ${pingUrl}`);
-      setInterval(async () => {
-        try {
-          await fetch(pingUrl);
-        } catch (e) {
-          console.error('Ping failed', e);
-        }
-      }, 14 * 60 * 1000); // 14 minutes
-    }
   } catch (err) {
     console.error('❌ Error starting server:', err);
     process.exit(1);

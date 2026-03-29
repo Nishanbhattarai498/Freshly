@@ -14,6 +14,9 @@ const ML_REQUEST_TIMEOUT_MS = parseInt(process.env.ML_REQUEST_TIMEOUT_MS || '100
 const ML_RETRY_ATTEMPTS = Math.max(parseInt(process.env.ML_RETRY_ATTEMPTS || '2', 10), 1);
 const ML_RETRY_BACKOFF_MS = Math.max(parseInt(process.env.ML_RETRY_BACKOFF_MS || '1200', 10), 250);
 const ML_LOCAL_FALLBACK_ENABLED = process.env.ML_LOCAL_FALLBACK !== '0';
+const ML_HEALTH_TIMEOUT_MS = Math.max(parseInt(process.env.ML_HEALTH_TIMEOUT_MS || '8000', 10), 1000);
+const ML_COLD_START_TIMEOUT_MS = Math.max(parseInt(process.env.ML_COLD_START_TIMEOUT_MS || '70000', 10), ML_HEALTH_TIMEOUT_MS);
+const ML_COLD_START_POLL_INTERVAL_MS = Math.max(parseInt(process.env.ML_COLD_START_POLL_INTERVAL_MS || '2500', 10), 500);
 
 const predictSchema = z.object({
   name: z.string().min(2),
@@ -39,6 +42,20 @@ const extractResponseMessage = (parsed, status) => {
 };
 
 const isRetryableUpstreamStatus = (status) => [429, 500, 502, 503, 504].includes(status);
+
+const fetchWithTimeout = async (url, options = {}, timeoutMs) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+};
 
 const runPythonPredict = (payload) => {
   return new Promise((resolve, reject) => {
@@ -168,6 +185,50 @@ const runRemotePredict = async (payload) => {
   throw lastError || withStatus('ML service request failed', 502);
 };
 
+const waitForRemoteMl = async () => {
+  if (!ML_SERVICE_URL) {
+    return {
+      ready: false,
+      reason: 'ML_SERVICE_URL not configured',
+    };
+  }
+
+  const startedAt = Date.now();
+  let lastFailure = null;
+
+  while (Date.now() - startedAt < ML_COLD_START_TIMEOUT_MS) {
+    try {
+      const response = await fetchWithTimeout(`${ML_SERVICE_URL}/health`, {}, ML_HEALTH_TIMEOUT_MS);
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.model_loaded) {
+          return {
+            ready: true,
+            waitedMs: Date.now() - startedAt,
+            data,
+          };
+        }
+
+        lastFailure = 'ML health responded before model finished loading';
+      } else {
+        lastFailure = `Health endpoint returned status ${response.status}`;
+      }
+    } catch (error) {
+      lastFailure = error?.name === 'AbortError'
+        ? `ML health timed out after ${ML_HEALTH_TIMEOUT_MS}ms`
+        : (error?.message || 'Failed to reach ML service');
+    }
+
+    await sleep(ML_COLD_START_POLL_INTERVAL_MS);
+  }
+
+  return {
+    ready: false,
+    waitedMs: Date.now() - startedAt,
+    reason: lastFailure || `ML service did not become ready within ${ML_COLD_START_TIMEOUT_MS}ms`,
+  };
+};
+
 const getRemoteHealth = async () => {
   if (!ML_SERVICE_URL) {
     return {
@@ -176,11 +237,8 @@ const getRemoteHealth = async () => {
     };
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
-
   try {
-    const response = await fetch(`${ML_SERVICE_URL}/health`, { signal: controller.signal });
+    const response = await fetchWithTimeout(`${ML_SERVICE_URL}/health`, {}, ML_HEALTH_TIMEOUT_MS);
     if (!response.ok) {
       return {
         available: false,
@@ -197,8 +255,6 @@ const getRemoteHealth = async () => {
       available: false,
       reason: error?.message || 'Failed to reach ML service',
     };
-  } finally {
-    clearTimeout(timeout);
   }
 };
 
@@ -211,6 +267,8 @@ router.get('/status', async (req, res) => {
     mlServiceUrl: ML_SERVICE_URL || null,
     retryAttempts: ML_RETRY_ATTEMPTS,
     timeoutMs: ML_REQUEST_TIMEOUT_MS,
+    coldStartTimeoutMs: ML_COLD_START_TIMEOUT_MS,
+    healthTimeoutMs: ML_HEALTH_TIMEOUT_MS,
     remoteHealth,
     localFallback: {
       enabled: ML_LOCAL_FALLBACK_ENABLED,
@@ -235,13 +293,27 @@ router.post('/predict', async (req, res) => {
   try {
     if (ML_SERVICE_URL) {
       try {
+        const warmup = await waitForRemoteMl();
+        if (!warmup.ready) {
+          throw withStatus(
+            `ML service is still waking up on Render. ${warmup.reason || 'Please retry shortly.'}`,
+            503,
+            warmup
+          );
+        }
+
         const prediction = await runRemotePredict(payload);
-        return res.json({ ...prediction, prediction_source: 'remote' });
+        return res.json({
+          ...prediction,
+          prediction_source: 'remote',
+          cold_start_wait_ms: warmup.waitedMs || 0,
+        });
       } catch (remoteError) {
         attempts.push({
           source: 'remote',
           message: remoteError?.message || 'Remote prediction failed',
           statusCode: remoteError?.statusCode || 502,
+          details: remoteError?.details,
         });
       }
     }

@@ -147,10 +147,16 @@ export default function PredictScreen() {
     setError('');
 
     try {
-      const response = await api.post<PredictionResponse>('/ml/predict', validPayload);
+      const response = await api.post<PredictionResponse>('/ml/predict', validPayload, {
+        timeout: 95000,
+      });
       setResult(response.data);
     } catch (e) {
-      setError(getErrorMessage(e, 'Prediction failed'));
+      const message = getErrorMessage(
+        e,
+        'Prediction failed. If Render just put the backend or ML service to sleep, wait a bit and try again.'
+      );
+      setError(message);
       setResult(null);
     } finally {
       setLoading(false);
