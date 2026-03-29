@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
 import { useSignUp, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Mail, Lock, Key, User } from 'lucide-react-native';
+import { Mail, Lock, Key, User, ArrowRight, Store, Users } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
@@ -16,7 +16,7 @@ const getClerkErrorMessage = (err: unknown, fallback: string): string => {
 
 export default function SignUp() {
   const { isLoaded, signUp, setActive } = useSignUp();
-  const { isLoaded: userLoaded, isSignedIn, user } = useUser();
+  const { isLoaded: userLoaded, isSignedIn } = useUser();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -33,26 +33,22 @@ export default function SignUp() {
 
   useEffect(() => {
     if (isLoaded && userLoaded && isSignedIn) {
-      router.replace("/(tabs)/home");
+      router.replace('/(tabs)/home');
     }
-  }, [isLoaded, userLoaded, isSignedIn, user, router]);
+  }, [isLoaded, userLoaded, isSignedIn, router]);
 
   if (!isLoaded || !userLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#16a34a" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#07141d' : '#f4f8f6' }}>
+        <ActivityIndicator size="large" color="#14b8a6" />
       </View>
     );
   }
 
-  
   const requestLocationPermission = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(
-        'Permission Needed',
-        'Location access is needed to find nearby food items.'
-      );
+      Alert.alert('Permission Needed', 'Location access is needed to find nearby food items.');
     }
   };
 
@@ -61,13 +57,12 @@ export default function SignUp() {
       Alert.alert('Sign up unavailable', 'Authentication service is still loading. Please try again.');
       return;
     }
-
     if (!email || !userPassword || !firstName || !lastName) {
-      Alert.alert("Missing Fields", "Please fill all fields.");
+      Alert.alert('Missing Fields', 'Please fill all fields.');
       return;
     }
-    setLoading(true);
 
+    setLoading(true);
     try {
       await signUp.create({
         emailAddress: email,
@@ -98,17 +93,11 @@ export default function SignUp() {
     }
 
     setLoading(true);
-
     try {
-      const completeSignUp =
-        await signUp.attemptEmailAddressVerification({ code });
-
-      if (completeSignUp.status === "complete") {
-        await setActive({
-          session: completeSignUp.createdSessionId,
-        });
+      const completeSignUp = await signUp.attemptEmailAddressVerification({ code });
+      if (completeSignUp.status === 'complete') {
+        await setActive({ session: completeSignUp.createdSessionId });
       }
-
       await requestLocationPermission();
     } catch (err) {
       console.error(err);
@@ -120,230 +109,100 @@ export default function SignUp() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
-      style={{
-        flex: 1,
-        backgroundColor: isDark ? '#0b1220' : '#f8fafc',
-      }}
+      style={{ flex: 1, backgroundColor: isDark ? '#07141d' : '#f4f8f6' }}
     >
-      <LinearGradient
-        colors={isDark ? ['#0b1220', '#052e2b'] : ['#e6fffb', '#dbeafe']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ flex: 1 }}
-      >
+      <LinearGradient colors={isDark ? ['#07141d', '#0d2225', '#11342e'] : ['#f3fff9', '#daf7eb', '#ddf2ff']} style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: 'center',
-            padding: 24,
-          }}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 22 }}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
         >
-        {/* Logo Section */}
-        <View style={{ alignItems: 'center', marginBottom: 22 }}>
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: 36,
-              backgroundColor: isDark ? 'rgba(20,184,166,0.2)' : '#ccfbf1',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 10,
-            }}
-          >
-            <Text style={{ fontSize: 32 }}>🍃</Text>
+          <View style={{ marginBottom: 22 }}>
+            <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: isDark ? 'rgba(45,212,191,0.12)' : 'rgba(20,184,166,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+              <Users size={30} color={isDark ? '#5eead4' : '#0f766e'} />
+            </View>
+            <Text style={{ color: isDark ? '#99f6e4' : '#0f766e', fontSize: 12, fontWeight: '800', letterSpacing: 2.5 }}>JOIN FRESHLY</Text>
+            <Text style={{ fontSize: 34, fontWeight: '900', color: isDark ? '#f8fafc' : '#0f172a', marginTop: 8, lineHeight: 40 }}>
+              {verifyMode ? 'Verify your email.' : 'Create an account that feels ready to use.'}
+            </Text>
+            <Text style={{ color: isDark ? '#b6c4d3' : '#516072', marginTop: 12, fontSize: 16, lineHeight: 24 }}>
+              {verifyMode ? 'Enter the latest code from your inbox to activate your account.' : 'Set up your identity once, then start sharing or claiming nearby food in a cleaner experience.'}
+            </Text>
           </View>
 
-          <Text
+          <View
             style={{
-              fontSize: 30,
-              fontWeight: '900',
-              color: isDark ? '#f8fafc' : '#0f172a',
+              backgroundColor: isDark ? 'rgba(8,20,29,0.82)' : 'rgba(255,255,255,0.9)',
+              borderRadius: 30,
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(148,163,184,0.14)' : 'rgba(15,23,42,0.08)',
+              padding: 20,
+              shadowColor: '#08111d',
+              shadowOpacity: 0.16,
+              shadowRadius: 24,
+              shadowOffset: { width: 0, height: 14 },
+              elevation: 8,
             }}
           >
-            Freshly
-          </Text>
+            {!verifyMode ? (
+              <>
+                <InputField label="First Name" placeholder="First name" value={firstName} onChangeText={setFirstName} icon={<User size={20} color="#7a8a9d" />} />
+                <InputField label="Last Name" placeholder="Last name" value={lastName} onChangeText={setLastName} icon={<User size={20} color="#7a8a9d" />} />
+                <InputField label="Email" placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" icon={<Mail size={20} color="#7a8a9d" />} />
+                <InputField label="Password" placeholder="Password" value={userPassword} onChangeText={setUserPassword} secureTextEntry icon={<Lock size={20} color="#7a8a9d" />} onSubmitEditing={onSignUpPress} returnKeyType="go" />
 
-          <Text
-            style={{
-              color: isDark ? '#cbd5e1' : '#475569',
-              marginTop: 5,
-            }}
-          >
-            Join the food-saving community.
-          </Text>
-        </View>
+                <Text style={{ marginBottom: 10, fontWeight: '800', color: isDark ? '#dce9f4' : '#324253', fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase' }}>
+                  Choose Role
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 18 }}>
+                  {[
+                    { key: 'CUSTOMER', label: 'Customer', icon: Users, activeColor: '#0f766e' },
+                    { key: 'SHOPKEEPER', label: 'Shopkeeper', icon: Store, activeColor: '#0284c7' },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const active = role === item.key;
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        onPress={() => setRole(item.key)}
+                        style={{
+                          flex: 1,
+                          padding: 14,
+                          borderRadius: 22,
+                          backgroundColor: active ? item.activeColor : (isDark ? 'rgba(255,255,255,0.04)' : '#f4faf7'),
+                          borderWidth: 1,
+                          borderColor: active ? item.activeColor : (isDark ? 'rgba(148,163,184,0.12)' : '#e2ece8'),
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Icon size={18} color={active ? '#ffffff' : (isDark ? '#dce9f4' : '#324253')} />
+                        <Text style={{ color: active ? '#ffffff' : (isDark ? '#dce9f4' : '#324253'), fontWeight: '800', marginTop: 8 }}>
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
 
-        <View
-          style={{
-            backgroundColor: isDark ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.94)',
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.08)',
-            padding: 18,
-            shadowColor: '#0f172a',
-            shadowOpacity: 0.12,
-            shadowRadius: 18,
-            shadowOffset: { width: 0, height: 12 },
-            elevation: 7,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 24,
-              fontWeight: '800',
-              marginBottom: 16,
-              color: isDark ? '#f8fafc' : '#0f172a',
-            }}
-          >
-            {verifyMode ? 'Verify Email' : 'Create Account'}
-          </Text>
+                <Button label={loading ? 'Creating Account...' : 'Sign Up'} onPress={onSignUpPress} disabled={loading} iconRight={<ArrowRight size={18} color="#ffffff" />} />
+              </>
+            ) : (
+              <>
+                <InputField label="Verification Code" placeholder="Enter verification code" value={code} onChangeText={setCode} keyboardType="number-pad" icon={<Key size={20} color="#7a8a9d" />} onSubmitEditing={onPressVerify} returnKeyType="done" />
+                <Button label={loading ? 'Verifying...' : 'Verify Email'} onPress={onPressVerify} disabled={loading} />
+              </>
+            )}
 
-        {!verifyMode ? (
-          <>
-            <InputField
-              placeholder="First Name"
-              value={firstName}
-              onChangeText={setFirstName}
-              icon={<User size={20} color="#6b7280" />}
-            />
-
-            <InputField
-              placeholder="Last Name"
-              value={lastName}
-              onChangeText={setLastName}
-              icon={<User size={20} color="#6b7280" />}
-            />
-
-            <InputField
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              icon={<Mail size={20} color="#6b7280" />}
-            />
-
-            <InputField
-              placeholder="Password"
-              value={userPassword}
-              onChangeText={setUserPassword}
-              secureTextEntry
-              icon={<Lock size={20} color="#6b7280" />}
-              onSubmitEditing={onSignUpPress}
-              returnKeyType="go"
-            />
-
-            {/* Role Selection */}
-            <View style={{ marginVertical: 20 }}>
-              <Text
-                style={{
-                  marginBottom: 10,
-                  fontWeight: '700',
-                  color: isDark ? '#f1f5f9' : '#0f172a',
-                }}
-              >
-                Select Role
-              </Text>
-
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    padding: 12,
-                    borderRadius: 12,
-                    backgroundColor:
-                      role === "CUSTOMER"
-                        ? '#0f766e'
-                        : isDark
-                          ? '#334155'
-                          : '#e2e8f0',
-                    alignItems: 'center',
-                  }}
-                  onPress={() => setRole("CUSTOMER")}
-                >
-                  <Text style={{ color: role === "CUSTOMER" ? 'white' : (isDark ? '#e2e8f0' : '#111827'), fontWeight: '700' }}>
-                    Customer
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    padding: 12,
-                    borderRadius: 12,
-                    backgroundColor:
-                      role === "SHOPKEEPER"
-                        ? '#0ea5e9'
-                        : isDark
-                          ? '#334155'
-                          : '#e2e8f0',
-                    alignItems: 'center',
-                  }}
-                  onPress={() => setRole("SHOPKEEPER")}
-                >
-                  <Text style={{ color: role === "SHOPKEEPER" ? 'white' : (isDark ? '#e2e8f0' : '#111827'), fontWeight: '700' }}>
-                    Shopkeeper
-                  </Text>
-                </TouchableOpacity>
-              </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 22 }}>
+              <Text style={{ color: isDark ? '#b6c4d3' : '#516072' }}>Already have an account?</Text>
+              <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+                <Text style={{ color: '#0f766e', marginLeft: 6, fontWeight: '800' }}>Login</Text>
+              </TouchableOpacity>
             </View>
-
-            <Button
-              label={loading ? "Creating Account..." : "Sign Up"}
-              onPress={onSignUpPress}
-              disabled={loading}
-            />
-          </>
-        ) : (
-          <>
-            <InputField
-              placeholder="Enter Verification Code"
-              value={code}
-              onChangeText={setCode}
-              keyboardType="number-pad"
-              icon={<Key size={20} color="#6b7280" />}
-              onSubmitEditing={onPressVerify}
-              returnKeyType="done"
-            />
-
-            <Button
-              label={loading ? "Verifying..." : "Verify Email"}
-              onPress={onPressVerify}
-              disabled={loading}
-            />
-          </>
-        )}
-
-        {/* Login Link */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "center",
-            marginTop: 22,
-          }}
-        >
-          <Text style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
-            Already have an account?
-          </Text>
-
-          <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-            <Text
-              style={{
-                color: '#0f766e',
-                marginLeft: 5,
-                fontWeight: '700',
-              }}
-            >
-              Login
-            </Text>
-          </TouchableOpacity>
-        </View>
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
       </LinearGradient>
     </KeyboardAvoidingView>
   );

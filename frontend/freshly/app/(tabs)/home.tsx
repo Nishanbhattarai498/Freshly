@@ -234,7 +234,7 @@ export default function Home() {
     const theme = getStatusTheme(item.status);
     return (
     <TouchableOpacity
-      className="mb-6 rounded-3xl overflow-hidden mx-4 shadow-xl border border-gray-100/80 dark:border-gray-800 bg-white dark:bg-gray-900"
+      className="mb-6 rounded-[30px] overflow-hidden mx-4 shadow-xl border border-gray-100/80 dark:border-white/10 bg-white dark:bg-[#0b1822]"
       onPress={() => router.push(`/(item)/${item.id}`)}
       activeOpacity={0.93}
     >
@@ -263,7 +263,7 @@ export default function Home() {
         </View>
       </View>
 
-      <View className="p-5 bg-white dark:bg-gray-900">
+      <View className="p-5 bg-white dark:bg-[#0b1822]">
         <View className="flex-row items-center justify-between">
           <Text className="text-gray-900 dark:text-white text-xl font-extrabold flex-1 mr-3 leading-tight" numberOfLines={1}>
             {item.title}
@@ -300,22 +300,22 @@ export default function Home() {
   const ListHeader = () => (
     <View className="pb-6">
       <View className="px-5 pt-12">
-        <View className="overflow-hidden rounded-3xl border border-gray-200 dark:border-gray-800 shadow-xl">
+        <View className="overflow-hidden rounded-[30px] border border-gray-200/80 dark:border-white/10 shadow-xl">
           <LinearGradient
-            colors={colorScheme === 'dark' ? ['#0f172a', '#0b1220'] : ['#ecfdf3', '#d6f5e3']}
+            colors={colorScheme === 'dark' ? ['#08131d', '#103127', '#11384a'] : ['#ffffff', '#e4fbf0', '#ddf1ff']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
             <View className="p-5">
               <View className="flex-row justify-between items-start">
                 <View className="flex-1 pr-3">
-                  <Text className="text-xs font-semibold uppercase tracking-[3px] text-emerald-700 dark:text-emerald-300">Freshly</Text>
-                  <Text className="text-3xl font-black text-gray-900 dark:text-white mt-2 leading-9">Share. Claim. Waste less.</Text>
-                  <Text className="text-gray-600 dark:text-gray-300 mt-3 leading-6">Local food stays local. Help it find a home.</Text>
+                  <Text className="text-xs font-semibold uppercase tracking-[3px] text-emerald-700 dark:text-emerald-300">Freshly Feed</Text>
+                  <Text className="text-3xl font-black text-gray-900 dark:text-white mt-2 leading-9">Good food deserves a second stop, not a bin.</Text>
+                  <Text className="text-gray-600 dark:text-gray-300 mt-3 leading-6">Browse nearby offers, act fast on expiring items, and keep your local food circle moving.</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => router.push('/notifications')}
-                  className="bg-white/80 dark:bg-gray-900/80 border border-white/40 dark:border-gray-700 rounded-2xl p-3 shadow-md"
+                  className="bg-white/80 dark:bg-slate-900/70 border border-white/50 dark:border-white/10 rounded-2xl p-3 shadow-md"
                 >
                   <Bell size={20} color={colorScheme === 'dark' ? '#fff' : '#111827'} />
                 </TouchableOpacity>
@@ -324,27 +324,27 @@ export default function Home() {
               <View className="flex-row items-center mt-5 space-x-3">
                 <TouchableOpacity
                   onPress={() => router.push('/post')}
-                  className="flex-1 bg-emerald-600 rounded-2xl px-4 py-3 flex-row items-center justify-between shadow-lg"
+                  className="flex-1 bg-emerald-700 rounded-[22px] px-4 py-4 flex-row items-center justify-between shadow-lg"
                   activeOpacity={0.9}
                 >
                   <View>
                     <Text className="text-white font-semibold text-base">Share an item</Text>
-                    <Text className="text-white/90 text-xs mt-1">Help someone nearby today</Text>
+                    <Text className="text-white/90 text-xs mt-1">Post quickly with smarter defaults</Text>
                   </View>
                   <ArrowUpRight size={18} color="#fff" />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => router.push('/messages')}
-                  className="w-14 h-14 rounded-2xl bg-white/80 dark:bg-gray-900/80 border border-white/40 dark:border-gray-700 items-center justify-center shadow"
+                  className="w-14 h-14 rounded-[22px] bg-white/80 dark:bg-slate-900/70 border border-white/50 dark:border-white/10 items-center justify-center shadow"
                   activeOpacity={0.9}
                 >
-                  <Sparkles size={20} color={colorScheme === 'dark' ? '#a5b4fc' : '#7c3aed'} />
+                  <Sparkles size={20} color={colorScheme === 'dark' ? '#7dd3fc' : '#0f766e'} />
                 </TouchableOpacity>
               </View>
 
               <TouchableOpacity
                 onPress={() => router.push('/search')}
-                className="flex-row items-center bg-white/80 dark:bg-gray-900/80 p-4 rounded-2xl border border-white/40 dark:border-gray-700 mt-5"
+                className="flex-row items-center bg-white/85 dark:bg-slate-900/75 p-4 rounded-[22px] border border-white/50 dark:border-white/10 mt-5"
                 activeOpacity={0.9}
               >
                 <View className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 items-center justify-center mr-3">
@@ -383,8 +383,8 @@ export default function Home() {
 
       {userAddress ? (
         <View className="px-5 mt-2">
-          <View className="flex-row items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-3 shadow-sm">
-            <View className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 items-center justify-center mr-3">
+          <View className="flex-row items-center bg-white dark:bg-[#0b1822] border border-gray-200 dark:border-white/10 rounded-[24px] p-3 shadow-sm">
+            <View className="w-10 h-10 rounded-[18px] bg-emerald-100 dark:bg-emerald-900/40 items-center justify-center mr-3">
               <MapPin size={16} color="#059669" />
             </View>
             <View className="flex-1">
@@ -401,7 +401,7 @@ export default function Home() {
   );
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-950">
+    <View className="flex-1 bg-[#f4f8f6] dark:bg-[#06131f]">
       <StatusBar barStyle={colorScheme === 'dark' ? "light-content" : "dark-content"} />
       <FlatList
         data={items}

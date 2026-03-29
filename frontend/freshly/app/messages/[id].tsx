@@ -100,6 +100,7 @@ export default function ConversationScreen() {
   }, []);
 
   const loadConversation = useCallback(async () => {
+    console.log('[chat] loadConversation invoked, conversationId=', conversationId, 'userId=', userId, 'isLoaded=', isLoaded);
     if (!isLoaded) {
       setLoading(true);
       return;
@@ -128,16 +129,19 @@ export default function ConversationScreen() {
 
     try {
       const token = await getTokenWithTimeout();
+      console.log('[chat] token available=', Boolean(token));
       if (!token) {
         setError('Session unavailable. Please login again.');
         setLoading(false);
         return;
       }
-
+      console.log('[chat] requesting messages', `/messages/${conversationId}`);
       const response = await api.get(`/messages/${conversationId}`, {
         timeout: 12000,
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      console.log('[chat] messages response ok, dataKeys=', Object.keys(response?.data || {}));
 
       const data = (response?.data || {}) as ConversationResponse;
       const nextMessages = Array.isArray(data.messages) ? data.messages : [];

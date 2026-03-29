@@ -16,18 +16,20 @@ export default function TabLayout() {
   const theme = useMemo(
     () => {
       const bg: readonly [ColorValue, ColorValue] = isDark
-        ? ['#0f172a', '#1e293b']
-        : ['#ffffff', '#f8fafc'];
+        ? ['#08131d', '#0f2530']
+        : ['#ffffff', '#eef8f4'];
 
       return {
-        active: '#10b981',
-        activeGlow: 'rgba(16,185,129,0.3)',
-        activeLight: 'rgba(16,185,129,0.15)',
-        inactive: isDark ? '#6b7280' : '#9ca3af',
-        inactiveText: isDark ? '#94a3b8' : '#64748b',
+        active: '#14b8a6',
+        activeGlow: isDark ? 'rgba(45,212,191,0.35)' : 'rgba(20,184,166,0.22)',
+        activeLight: 'rgba(20,184,166,0.15)',
+        inactive: isDark ? '#70859a' : '#8da0b0',
+        inactiveText: isDark ? '#9eb3c7' : '#617284',
         bg,
-        border: isDark ? 'rgba(100,116,139,0.2)' : 'rgba(15,23,42,0.08)',
-        pill: isDark ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.1)',
+        border: isDark ? 'rgba(148,163,184,0.15)' : 'rgba(15,23,42,0.08)',
+        pill: isDark ? 'rgba(20,184,166,0.18)' : 'rgba(20,184,166,0.1)',
+        pillBorder: isDark ? 'rgba(94,234,212,0.18)' : 'rgba(20,184,166,0.12)',
+        fab: isDark ? ['#14b8a6', '#38bdf8'] as const : ['#0f766e', '#14b8a6'] as const,
         shadow: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.15)',
         text: isDark ? '#f1f5f9' : '#0f172a',
       };
@@ -44,14 +46,14 @@ export default function TabLayout() {
 
   const TabIcon = ({ Icon, focused, color, label }: TabIconProps) => {
     const animatedPill = useAnimatedStyle(() => ({
-      transform: [{ scale: withSpring(focused ? 1 : 0.8, { damping: 13, stiffness: 140 }) }],
+      transform: [{ scale: withSpring(focused ? 1 : 0.82, { damping: 13, stiffness: 145 }) }],
       opacity: withTiming(focused ? 1 : 0, { duration: 200 }),
     }));
 
     const animatedIcon = useAnimatedStyle(() => ({
       transform: [
-        { scale: withSpring(focused ? 1.08 : 1, { damping: 12, stiffness: 155 }) },
-        { translateY: withSpring(focused ? -1.5 : 0, { damping: 12 }) },
+        { scale: withSpring(focused ? 1.06 : 0.98, { damping: 12, stiffness: 155 }) },
+        { translateY: withSpring(focused ? -3 : 0, { damping: 12 }) },
       ],
     }));
 
@@ -62,9 +64,9 @@ export default function TabLayout() {
 
     return (
       <View style={styles.iconWrapper}>
-        <Animated.View style={[styles.activePill, { backgroundColor: theme.pill }, animatedPill]} />
+        <Animated.View style={[styles.activePill, { backgroundColor: theme.pill, borderColor: theme.pillBorder }, animatedPill]} />
         <Animated.View style={[styles.iconColumn, animatedIcon]}>
-          <Icon size={20} color={color} strokeWidth={focused ? 2.3 : 1.9} />
+          <Icon size={20} color={color} strokeWidth={focused ? 2.35 : 1.9} />
           <Animated.Text
             style={[
               styles.tabLabel,
@@ -78,7 +80,7 @@ export default function TabLayout() {
         </Animated.View>
 
         {focused && (
-          <Animated.View style={[styles.indicator, { backgroundColor: theme.active }]}> 
+          <Animated.View style={[styles.indicator, { backgroundColor: theme.activeGlow }]}> 
             <View style={[styles.dot, { backgroundColor: theme.active }]} />
           </Animated.View>
         )}
@@ -102,19 +104,22 @@ export default function TabLayout() {
 
     return (
       <View style={styles.fabWrapper}>
-        <Animated.View style={[styles.fabPulse, { backgroundColor: theme.active }, pulseStyle]} />
-        <Animated.View
-          style={[
-            styles.fab,
-            {
-              backgroundColor: theme.active,
-              shadowColor: theme.active,
-              shadowOpacity: 0.5,
-            },
-            animatedStyle,
-          ]}
-        >
-          <PlusCircle size={26} color="#ffffff" strokeWidth={2.3} />
+        <Animated.View style={[styles.fabPulse, { backgroundColor: theme.activeGlow }, pulseStyle]} />
+        <Animated.View style={[styles.fabOuter, animatedStyle]}>
+          <LinearGradient
+            colors={theme.fab}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[
+              styles.fab,
+              {
+                shadowColor: theme.active,
+                shadowOpacity: 0.45,
+              },
+            ]}
+          >
+            <PlusCircle size={24} color="#ffffff" strokeWidth={2.4} />
+          </LinearGradient>
         </Animated.View>
       </View>
     );
@@ -174,33 +179,36 @@ export default function TabLayout() {
           position: 'absolute',
           left: 0,
           right: 0,
-          marginHorizontal: 18,
-          bottom: Math.max(0, insets.bottom),
-          height: 74,
-          borderRadius: 22,
+          bottom: 0,
+          marginHorizontal: 0,
+          height: 78 + Math.max(insets.bottom, 8),
+          paddingBottom: Math.max(insets.bottom, 8),
+          borderRadius: 0,
           backgroundColor: 'transparent',
           borderWidth: 0,
           borderTopWidth: 0,
           borderTopColor: 'transparent',
           shadowColor: theme.shadow,
-          shadowOpacity: isDark ? 0.45 : 0.18,
-          shadowOffset: { width: 0, height: 14 },
-          shadowRadius: 18,
-          elevation: 16,
+          shadowOpacity: isDark ? 0.3 : 0.1,
+          shadowOffset: { width: 0, height: -4 },
+          shadowRadius: 10,
+          elevation: 10,
           overflow: 'visible',
         },
         tabBarItemStyle: {
           alignItems: 'center',
           justifyContent: 'center',
+          paddingTop: 6,
         },
         tabBarBackground: () => (
-          <View style={[StyleSheet.absoluteFill, { borderRadius: 22, overflow: 'hidden' }]}>
+          <View style={[StyleSheet.absoluteFill, { borderRadius: 0, overflow: 'hidden', borderTopWidth: 1, borderColor: theme.border }]}>
             <LinearGradient
               colors={theme.bg}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
+            <View style={[styles.topHighlight, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.85)' }]} />
           </View>
         ),
         headerShown: false,
@@ -249,8 +257,8 @@ const styles = StyleSheet.create({
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 58,
-    height: 58,
+    width: 60,
+    height: 60,
     position: 'relative',
   },
   iconColumn: {
@@ -258,59 +266,73 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabLabel: {
-    marginTop: 4,
+    marginTop: 5,
     fontSize: 11,
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   activePill: {
     position: 'absolute',
-    width: 54,
-    height: 54,
+    width: 52,
+    height: 52,
     borderRadius: 18,
+    borderWidth: 1,
     zIndex: -1,
   },
   indicator: {
     position: 'absolute',
-    bottom: 2,
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-  dot: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 2.5,
-  },
-  fab: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    bottom: 1,
+    width: 18,
+    height: 6,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOffset: { width: 0, height: 8 },
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 999,
+  },
+  fab: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 8,
     zIndex: 1,
   },
+  fabOuter: {
+    borderRadius: 28,
+  },
   fabWrapper: {
-    width: 50,
-    height: 50,
+    width: 58,
+    height: 58,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   fabLabelWrap: {
-    width: 58,
-    height: 58,
+    width: 60,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
   fabPulse: {
     position: 'absolute',
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     zIndex: 0,
+  },
+  topHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 18,
+    right: 18,
+    height: 1,
+    borderRadius: 999,
   },
 });

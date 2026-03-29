@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
+import { getThemeTokens, gradients, radii, shadows, spacing, typography } from './theme';
 
 type LoadingViewProps = {
   message?: string;
@@ -31,65 +33,74 @@ type EmptyViewProps = {
 export const LoadingView = ({ message = 'Loading...' }: LoadingViewProps) => {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const tokens = getThemeTokens(isDark);
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#020617' : '#f8fafc' }}>
+    <LinearGradient colors={isDark ? gradients.auroraDark : gradients.auroraLight} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
       <View
         style={{
-          paddingHorizontal: 20,
-          paddingVertical: 18,
-          borderRadius: 20,
-          backgroundColor: isDark ? '#0f172a' : '#ffffff',
+          width: '100%',
+          maxWidth: 320,
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.xl,
+          borderRadius: radii.xxl,
+          backgroundColor: tokens.card,
           borderWidth: 1,
-          borderColor: isDark ? '#334155' : '#e2e8f0',
+          borderColor: tokens.border,
           alignItems: 'center',
+          ...shadows.medium,
         }}
       >
-        <ActivityIndicator size="large" color="#10b981" />
-        <Text style={{ marginTop: 10, color: isDark ? '#e2e8f0' : '#334155', fontWeight: '600' }}>{message}</Text>
+        <ActivityIndicator size="large" color={tokens.tint} />
+        <Text style={{ marginTop: spacing.sm, color: tokens.textPrimary, fontWeight: '800', fontSize: typography.title.fontSize }}>
+          Hold tight
+        </Text>
+        <Text style={{ marginTop: spacing.xs, color: tokens.textSecondary, textAlign: 'center' }}>{message}</Text>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 
 export const ErrorView = ({ message = 'An error occurred', onRetry }: ErrorViewProps) => {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const tokens = getThemeTokens(isDark);
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: isDark ? '#020617' : '#f8fafc' }}>
+    <LinearGradient colors={isDark ? gradients.auroraDark : gradients.auroraLight} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
       <View
         style={{
           width: '100%',
           maxWidth: 420,
-          padding: 18,
-          borderRadius: 20,
-          backgroundColor: isDark ? '#0f172a' : '#ffffff',
+          padding: spacing.xl,
+          borderRadius: radii.xxl,
+          backgroundColor: tokens.card,
           borderWidth: 1,
-          borderColor: isDark ? '#334155' : '#e2e8f0',
+          borderColor: tokens.border,
+          ...shadows.medium,
         }}
       >
-        <Text style={{ fontSize: 18, fontWeight: '800', marginBottom: 8, color: isDark ? '#f8fafc' : '#0f172a' }}>
-          Something went wrong
+        <Text style={{ fontSize: typography.h2.fontSize, fontWeight: '900', marginBottom: spacing.xs, color: tokens.textPrimary }}>
+          Something slipped
         </Text>
-        <Text style={{ color: isDark ? '#cbd5e1' : '#475569' }}>{message}</Text>
+        <Text style={{ color: tokens.textSecondary, lineHeight: 22 }}>{message}</Text>
         {onRetry ? (
           <Pressable
             onPress={onRetry}
             style={{
-              marginTop: 14,
-              paddingVertical: 10,
-              paddingHorizontal: 14,
-              borderRadius: 12,
+              marginTop: spacing.md,
+              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.md,
+              borderRadius: radii.lg,
               alignSelf: 'flex-start',
-              backgroundColor: '#10b981',
+              backgroundColor: tokens.tintStrong,
             }}
           >
-            <Text style={{ color: '#ffffff', fontWeight: '700' }}>Retry</Text>
+            <Text style={{ color: '#ffffff', fontWeight: '800' }}>Retry</Text>
           </Pressable>
         ) : null}
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -107,12 +118,13 @@ export const StatusPopup = ({
 }: StatusPopupProps) => {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const tokens = getThemeTokens(isDark);
 
   if (!visible) return null;
 
   const effectiveTitle = title || (type === 'success' ? 'Success' : type === 'error' ? 'Something went wrong' : 'Notice');
   const effectiveMessage = message || description || '';
-  const accent = type === 'success' ? '#16a34a' : type === 'error' ? '#dc2626' : '#0369a1';
+  const accent = type === 'success' ? tokens.success : type === 'error' ? tokens.danger : '#0ea5e9';
 
   return (
     <View
@@ -124,26 +136,35 @@ export const StatusPopup = ({
         right: 0,
         justifyContent: 'flex-end',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        padding: 16,
+        backgroundColor: 'rgba(2,6,23,0.4)',
+        padding: spacing.md,
+        zIndex: 30,
       }}
     >
       <View
         style={{
-          backgroundColor: isDark ? '#0f172a' : '#ffffff',
-          padding: 16,
-          borderRadius: 16,
+          backgroundColor: tokens.card,
+          padding: spacing.lg,
+          borderRadius: radii.xxl,
           width: '100%',
           borderWidth: 1,
-          borderColor: isDark ? '#334155' : '#e2e8f0',
+          borderColor: tokens.border,
+          ...shadows.medium,
         }}
       >
-        <Text style={{ color: accent, fontWeight: '800', fontSize: 16 }}>{effectiveTitle}</Text>
-        {effectiveMessage ? (
-          <Text style={{ color: isDark ? '#cbd5e1' : '#334155', marginTop: 8 }}>{effectiveMessage}</Text>
-        ) : null}
+        <View
+          style={{
+            width: 48,
+            height: 6,
+            borderRadius: radii.full,
+            backgroundColor: accent,
+            marginBottom: spacing.md,
+          }}
+        />
+        <Text style={{ color: tokens.textPrimary, fontWeight: '900', fontSize: 18 }}>{effectiveTitle}</Text>
+        {effectiveMessage ? <Text style={{ color: tokens.textSecondary, marginTop: spacing.sm, lineHeight: 22 }}>{effectiveMessage}</Text> : null}
 
-        <View style={{ flexDirection: 'row', marginTop: 14 }}>
+        <View style={{ flexDirection: 'row', marginTop: spacing.lg }}>
           {secondaryLabel ? (
             <Pressable
               onPress={() => {
@@ -152,14 +173,14 @@ export const StatusPopup = ({
               }}
               style={{
                 flex: 1,
-                marginRight: 8,
-                paddingVertical: 10,
-                borderRadius: 12,
-                backgroundColor: isDark ? '#1f2937' : '#f1f5f9',
+                marginRight: spacing.sm,
+                paddingVertical: spacing.sm,
+                borderRadius: radii.lg,
+                backgroundColor: isDark ? '#132434' : '#eef5f4',
                 alignItems: 'center',
               }}
             >
-              <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontWeight: '700' }}>{secondaryLabel}</Text>
+              <Text style={{ color: tokens.textPrimary, fontWeight: '800' }}>{secondaryLabel}</Text>
             </Pressable>
           ) : null}
 
@@ -170,13 +191,13 @@ export const StatusPopup = ({
             }}
             style={{
               flex: 1,
-              paddingVertical: 10,
-              borderRadius: 12,
+              paddingVertical: spacing.sm,
+              borderRadius: radii.lg,
               backgroundColor: accent,
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: '#ffffff', fontWeight: '700' }}>{primaryLabel || 'OK'}</Text>
+            <Text style={{ color: '#ffffff', fontWeight: '800' }}>{primaryLabel || 'OK'}</Text>
           </Pressable>
         </View>
       </View>
@@ -187,10 +208,22 @@ export const StatusPopup = ({
 export const EmptyView = ({ message = 'No data available' }: EmptyViewProps) => {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const tokens = getThemeTokens(isDark);
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 16, color: isDark ? '#94a3b8' : '#64748b' }}>{message}</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl }}>
+      <View
+        style={{
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.md,
+          borderRadius: radii.xl,
+          backgroundColor: isDark ? '#102232' : '#f1f7f4',
+          borderWidth: 1,
+          borderColor: tokens.border,
+        }}
+      >
+        <Text style={{ fontSize: 16, color: tokens.textSecondary, fontWeight: '700', textAlign: 'center' }}>{message}</Text>
+      </View>
     </View>
   );
 };

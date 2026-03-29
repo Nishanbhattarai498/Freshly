@@ -49,7 +49,12 @@ export const connectSocket = (userId: string): FreshlySocket => {
 		socketUserId = null;
 	}
 
-	if (socket?.connected) return socket;
+	if (socket) {
+		if (!socket.connected) {
+			socket.connect();
+		}
+		return socket;
+	}
 
 	socket = io(SOCKET_URL, {
 		transports: ['websocket', 'polling'],

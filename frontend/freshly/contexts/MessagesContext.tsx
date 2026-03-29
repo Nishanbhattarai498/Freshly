@@ -64,6 +64,9 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
   const [error, setError] = useState<unknown>(null);
   const { getToken, userId, isLoaded } = useAuth();
   const lastRealtimeRefreshRef = useRef(0);
+  const conversationsRef = useRef<Conversation[]>([]);
+  const inFlightConversationsFetchRef = useRef<Promise<Conversation[]> | null>(null);
+  const lastConversationsFetchAtRef = useRef(0);
 
   const getTokenWithTimeout = useCallback(async (timeoutMs = 7000) => {
     try {
@@ -79,6 +82,10 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
   const addMessage = useCallback((message: ConversationMessage) => {
     setMessages((prev) => [...prev, message]);
   }, []);
+
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
 
   const updateMessage = useCallback((messageId: number, updates: Partial<ConversationMessage>) => {
     setMessages((prev) =>
@@ -121,6 +128,20 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
   }, [getTokenWithTimeout, isLoaded, userId]);
 
   const fetchConversations = useCallback(async () => {
+    console.log('[messages] fetchConversations called; isLoaded=', isLoaded, 'userId=', userId);
+    if (inFlightConversationsFetchRef.current) {
+      console.log('[messages] fetchConversations skipped: already in progress');
+      return inFlightConversationsFetchRef.current;
+    }
+
+    const now = Date.now();
+    if (lastConversationsFetchAtRef.current + 1000 > now) {
+      console.log('[messages] fetchConversations skipped: called too recently');
+      return conversationsRef.current;
+    }
+
+    lastConversationsFetchAtRef.current = now;
+
     if (!isLoaded || !userId) {
       setConversations([]);
       setUnreadMap({});
@@ -129,32 +150,40 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
       return [] as Conversation[];
     }
 
-    setLoading(true);
-    try {
-      const token = await getTokenWithTimeout();
-      const response = await api.get('/messages', {
-        timeout: 12000,
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      const nextConversations = Array.isArray(response?.data) ? (response.data as Conversation[]) : [];
-      setConversations(nextConversations);
+    const request = (async () => {
+      setLoading(true);
+      try {
+        const token = await getTokenWithTimeout();
+        const response = await api.get('/messages', {
+          timeout: 12000,
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        console.log('[messages] fetchConversations response ok, len=', Array.isArray(response?.data) ? response.data.length : 'na');
+        const nextConversations = Array.isArray(response?.data) ? (response.data as Conversation[]) : [];
+        setConversations(nextConversations);
 
-      const nextUnreadMap: Record<number, boolean> = {};
-      for (const conv of nextConversations) {
-        const lastMessage = conv?.messages?.[0];
-        nextUnreadMap[conv.id] = Boolean(lastMessage && lastMessage.senderId && lastMessage.senderId !== userId);
+        const nextUnreadMap: Record<number, boolean> = {};
+        for (const conv of nextConversations) {
+          const lastMessage = conv?.messages?.[0];
+          nextUnreadMap[conv.id] = Boolean(lastMessage && lastMessage.senderId && lastMessage.senderId !== userId);
+        }
+        setUnreadMap(nextUnreadMap);
+        setError(null);
+        return nextConversations;
+      } catch (err) {
+        console.error('[messages] fetchConversations error', err);
+        setError(err);
+        setConversations([]);
+        setUnreadMap({});
+        return [] as Conversation[];
+      } finally {
+        setLoading(false);
+        inFlightConversationsFetchRef.current = null;
       }
-      setUnreadMap(nextUnreadMap);
-      setError(null);
-      return nextConversations;
-    } catch (err) {
-      setError(err);
-      setConversations([]);
-      setUnreadMap({});
-      return [] as Conversation[];
-    } finally {
-      setLoading(false);
-    }
+    })();
+
+    inFlightConversationsFetchRef.current = request;
+    return request;
   }, [getTokenWithTimeout, isLoaded, userId]);
 
   const refreshFromRealtime = useCallback(() => {
@@ -173,7 +202,7 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
 
     const joinRooms = () => {
       socket.emit('join_user', userId);
-      for (const conv of conversations) {
+      for (const conv of conversationsRef.current) {
         socket.emit('join_conversation', conv.id);
       }
     };
@@ -200,7 +229,7 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
       socket.off('new_message', onRealtimeUpdate);
       socket.off('conversation_started', onRealtimeUpdate);
     };
-  }, [isLoaded, userId, conversations, refreshFromRealtime]);
+  }, [isLoaded, userId, refreshFromRealtime]);
 
   const state: MessagesState = {
     conversations,

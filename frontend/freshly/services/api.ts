@@ -47,6 +47,7 @@ const resolveHost = () => {
 
 const API_URL = resolveHost();
 const SERVER_ROOT_URL = API_URL.replace(/\/api$/, '');
+console.log(`[api] resolved API_URL=${API_URL} SERVER_ROOT_URL=${SERVER_ROOT_URL}`);
 
 type RetryableConfig = AxiosRequestConfig & {
   __retryCount?: number;
@@ -85,6 +86,13 @@ export const api = axios.create({
 
 api.interceptors.request.use(
   async (config) => {
+    try {
+      const method = String(config.method || 'get').toUpperCase();
+      const url = (config.baseURL || '') + (config.url || '');
+      console.log('[api] request:', method, url);
+    } catch (e) {
+      // ignore
+    }
     // Inject Clerk JWT automatically for protected endpoints.
     if (!config.headers?.Authorization) {
       const token = await tokenProvider();
@@ -124,6 +132,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    try {
+      const reqUrl = (error?.config?.baseURL || '') + (error?.config?.url || '');
+      console.error('[api] response error:', reqUrl, 'status=', error?.response?.status, 'message=', error?.message);
+    } catch (e) {
+      // ignore
+    }
     const config = error?.config as RetryableConfig | undefined;
     const method = String(config?.method || 'get').toLowerCase();
     const isIdempotent = method === 'get' || method === 'head' || method === 'options';

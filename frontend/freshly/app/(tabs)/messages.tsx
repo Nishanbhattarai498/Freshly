@@ -31,6 +31,19 @@ export default function MessagesTab() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const conversationsLengthRef = React.useRef(conversations.length);
+
+  React.useEffect(() => {
+    conversationsLengthRef.current = conversations.length;
+  }, [conversations.length]);
+
+  React.useEffect(() => {
+    if (isLoaded) return;
+    const authGuard = setTimeout(() => {
+      setLoading(false);
+    }, 12000);
+    return () => clearTimeout(authGuard);
+  }, [isLoaded]);
 
   // fetchConversations is provided by the MessagesProvider; call it when focused
 
@@ -47,7 +60,7 @@ export default function MessagesTab() {
         return () => undefined;
       }
 
-      const hasExisting = conversations.length > 0;
+      const hasExisting = conversationsLengthRef.current > 0;
       if (!hasExisting) setLoading(true);
 
       let fetchSettled = false;
@@ -85,7 +98,7 @@ export default function MessagesTab() {
         clearTimeout(loadingGuard);
         clearInterval(poll);
       };
-    }, [fetchConversations, user?.id, conversations.length, isLoaded, isSignedIn])
+    }, [fetchConversations, user?.id, isLoaded, isSignedIn])
   );
 
   // Provider already registers global socket listeners. No-op here.

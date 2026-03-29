@@ -165,19 +165,19 @@ export default function Profile() {
   );
 
   return (
-    <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+    <ScrollView className="flex-1 bg-[#f4f8f6] dark:bg-[#06131f]" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
       <View className="px-6 mb-8" style={{ paddingTop: Math.max(12, insets.top + 4) }}>
-        <Text className="text-xs font-semibold uppercase tracking-[3px] mb-3" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>Profile</Text>
+        <Text className="text-xs font-semibold uppercase tracking-[3px] mb-3" style={{ color: isDark ? '#99f6e4' : '#0f766e' }}>Profile</Text>
         <View
-          className="p-5 rounded-3xl flex-row items-center"
+          className="p-5 rounded-[30px] flex-row items-center"
           style={{
-            backgroundColor: isDark ? 'rgba(15,23,42,0.95)' : '#ffffff',
+            backgroundColor: isDark ? 'rgba(8,20,29,0.88)' : 'rgba(255,255,255,0.92)',
             borderWidth: 1,
-            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.06)',
-            shadowColor: '#000',
-            shadowOpacity: 0.08,
-            shadowRadius: 14,
-            shadowOffset: { width: 0, height: 10 },
+            borderColor: isDark ? 'rgba(148,163,184,0.14)' : 'rgba(15,23,42,0.08)',
+            shadowColor: '#08111d',
+            shadowOpacity: 0.12,
+            shadowRadius: 18,
+            shadowOffset: { width: 0, height: 12 },
           }}
         >
           <View className="relative">
@@ -211,7 +211,7 @@ export default function Profile() {
                   </View>
                 ) : null}
               </View>
-              <TouchableOpacity onPress={() => router.push('/edit-profile')} className="p-2 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f1f5f9' }}>
+              <TouchableOpacity onPress={() => router.push('/edit-profile')} className="p-2 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#edf7f3' }}>
                 <Edit2 size={16} color={isDark ? '#e2e8f0' : '#475569'} />
               </TouchableOpacity>
             </View>
@@ -219,7 +219,7 @@ export default function Profile() {
         </View>
 
         <View className="flex-row mt-4" style={{ gap: 10 }}>
-          <View className="px-3 py-2 rounded-full" style={{ backgroundColor: '#22c55e1a' }}>
+          <View className="px-3 py-2 rounded-full" style={{ backgroundColor: '#14b8a61a' }}>
             <Text className="text-[12px] font-semibold" style={{ color: '#16a34a' }}>
               Streak {achievements?.stats.streak.current ?? 0}d
             </Text>
@@ -239,15 +239,15 @@ export default function Profile() {
 
       <View className="px-6 mb-8">
         <View
-          className="rounded-3xl p-4"
+          className="rounded-[30px] p-4"
           style={{
-            backgroundColor: isDark ? 'rgba(15,23,42,0.9)' : '#ffffffee',
+            backgroundColor: isDark ? 'rgba(8,20,29,0.84)' : 'rgba(255,255,255,0.92)',
             borderWidth: 1,
-            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.06)',
-            shadowColor: '#000',
-            shadowOpacity: 0.08,
+            borderColor: isDark ? 'rgba(148,163,184,0.14)' : 'rgba(15,23,42,0.08)',
+            shadowColor: '#08111d',
+            shadowOpacity: 0.12,
             shadowRadius: 18,
-            shadowOffset: { width: 0, height: 10 },
+            shadowOffset: { width: 0, height: 12 },
           }}
         >
           <View className="flex-row items-center justify-between mb-3">
@@ -269,7 +269,7 @@ export default function Profile() {
           {!achievementsLoading && achievements && (
             <>
               <View className="flex-row mb-3">
-                <LinearGradient colors={['#16a34a', '#10b981']} className="flex-1 rounded-2xl p-3 mr-2">
+                <LinearGradient colors={['#0f766e', '#14b8a6', '#38bdf8']} className="flex-1 rounded-[24px] p-3 mr-2">
                   <View className="flex-row items-center justify-between">
                     <View>
                       <Text className="text-white text-xs opacity-80">Active streak</Text>
@@ -279,7 +279,7 @@ export default function Profile() {
                     <Flame size={36} color="#fff" />
                   </View>
                 </LinearGradient>
-                <View className="flex-1 bg-gray-50 dark:bg-gray-900/40 rounded-2xl p-3 ml-2 border border-gray-100 dark:border-gray-700">
+                <View className="flex-1 bg-gray-50 dark:bg-[#102232] rounded-[24px] p-3 ml-2 border border-gray-100 dark:border-white/10">
                   <View className="flex-row items-center justify-between">
                     <Text className="text-xs text-gray-500 dark:text-gray-400">Ranks</Text>
                     <Trophy size={18} color="#f59e0b" />
