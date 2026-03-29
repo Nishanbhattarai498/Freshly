@@ -8,7 +8,7 @@ export interface Item {
   quantity: number;
   unit: string;
   expiryDate: string;
-  status: 'AVAILABLE' | 'CLAIMED' | 'EXPIRED';
+  status: 'AVAILABLE' | 'CLAIMED' | 'EXPIRED' | 'DELETED';
   imageUrl?: string;
   category?: string;
   originalPrice?: number;

@@ -14,6 +14,21 @@ const getClerkErrorMessage = (err: unknown, fallback: string): string => {
   return maybeErr?.errors?.[0]?.message || maybeErr?.message || fallback;
 };
 
+const getStatusMessage = (status?: string) => {
+  switch (status) {
+    case 'needs_first_factor':
+      return 'Your account needs an email verification code before sign-in can finish.';
+    case 'needs_second_factor':
+      return 'Your account requires another verification step that this app does not support yet.';
+    case 'needs_new_password':
+      return 'Clerk is asking for a new password before sign-in can continue.';
+    case 'complete':
+      return 'Login complete.';
+    default:
+      return 'Authentication needs an extra step before sign-in can continue.';
+  }
+};
+
 export default function Login() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const { isLoaded: userLoaded, isSignedIn, user } = useUser();
@@ -51,21 +66,35 @@ export default function Login() {
       Alert.alert('Login unavailable', 'Authentication service is still loading. Please try again.');
       return;
     }
-    if (!email || !userPassword) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = userPassword.trim();
+
+    if (!normalizedEmail || !normalizedPassword) {
       Alert.alert('Missing Fields', 'Please enter email and password.');
       return;
     }
 
     setLoading(true);
     try {
-      const result = await signIn.create({ identifier: email, password: userPassword });
+      const result = await signIn.create({ identifier: normalizedEmail, password: normalizedPassword });
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
         router.replace('/(tabs)/home');
         await requestLocationPermission();
       } else if (result.status === 'needs_first_factor') {
+        const emailFactor = result.supportedFirstFactors?.find((factor) => factor.strategy === 'email_code');
+
+        if (emailFactor && 'emailAddressId' in emailFactor && emailFactor.emailAddressId) {
+          await signIn.prepareFirstFactor({
+            strategy: 'email_code',
+            emailAddressId: emailFactor.emailAddressId,
+          });
+        }
         setVerifyMode(true);
+        Alert.alert('Verification needed', 'We sent a login code to your email. Enter it to finish signing in.');
+      } else {
+        Alert.alert('Login step required', getStatusMessage(result.status ?? undefined));
       }
     } catch (err: unknown) {
       Alert.alert('Login Failed', getClerkErrorMessage(err, 'Something went wrong'));
@@ -115,7 +144,7 @@ export default function Login() {
       Alert.alert('Code Resent', 'A new verification code has been sent to your email.');
     } catch (err) {
       console.log('Resend error:', err);
-      Alert.alert('Error', 'Failed to resend code.');
+      Alert.alert('Error', getClerkErrorMessage(err, 'Failed to resend code.'));
     } finally {
       setLoading(false);
     }

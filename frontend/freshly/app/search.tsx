@@ -31,10 +31,12 @@ export default function SearchScreen() {
 
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<'items' | 'people'>('items');
+  const [categoryFilter, setCategoryFilter] = useState<'All' | 'Vegetables' | 'Fruits' | 'Bakery' | 'Meals' | 'Dairy' | 'Other'>('All');
   const [items, setItems] = useState<Item[]>([]);
   const [users, setUsers] = useState<FoundUser[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const itemCategories = ['All', 'Vegetables', 'Fruits', 'Bakery', 'Meals', 'Dairy', 'Other'] as const;
 
   const fetchItems = useCallback(async () => {
     setLoadingItems(true);
@@ -78,9 +80,12 @@ export default function SearchScreen() {
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) => getSearchText(item).includes(q));
-  }, [items, query]);
+    return items.filter((item) => {
+      const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
+      const matchesQuery = !q || getSearchText(item).includes(q);
+      return matchesCategory && matchesQuery;
+    });
+  }, [categoryFilter, items, query]);
 
   const startConversation = async (receiverId: string) => {
     try {
@@ -130,6 +135,32 @@ export default function SearchScreen() {
             <Text className={`font-semibold ${mode === 'people' ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>People</Text>
           </Pressable>
         </View>
+
+        {mode === 'items' ? (
+          <>
+            <View className="mt-4 flex-row flex-wrap">
+              {itemCategories.map((category) => {
+                const active = categoryFilter === category;
+                return (
+                  <Pressable
+                    key={category}
+                    onPress={() => setCategoryFilter(category)}
+                    className={`mr-2 mb-2 px-4 py-2 rounded-full border ${active ? 'bg-emerald-600 border-emerald-600' : 'bg-white/70 dark:bg-slate-900/70 border-slate-300 dark:border-slate-700'}`}
+                  >
+                    <Text className={`text-xs font-bold ${active ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{category}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text className="text-xs text-gray-700 dark:text-gray-200 mt-1">
+              {loadingItems ? 'Loading listings...' : `${filteredItems.length} item${filteredItems.length === 1 ? '' : 's'} found`}
+            </Text>
+          </>
+        ) : (
+          <Text className="text-xs text-gray-700 dark:text-gray-200 mt-4">
+            {query.trim().length < 2 ? 'Type at least 2 characters to search people.' : `${users.length} people found`}
+          </Text>
+        )}
       </LinearGradient>
 
       {mode === 'items' ? (

@@ -3,7 +3,7 @@ import { View, Text, Image, TouchableOpacity, ScrollView, Linking, ActivityIndic
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { LogOut, Settings, ChevronRight, MapPin, Edit2, HelpCircle, Award, Star, Flame, Trophy } from 'lucide-react-native';
+import { LogOut, Settings, ChevronRight, MapPin, Edit2, HelpCircle, Award, Star, Flame, Trophy, Archive, Bell } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useColorScheme } from 'nativewind';
 import { LoadingView } from '../../components/ui/States';
@@ -319,10 +319,67 @@ export default function Profile() {
         </View>
       </View>
 
+      <View className="px-6 mb-8">
+        <Text className="text-lg font-bold mb-3" style={{ color: isDark ? '#fff' : '#0f172a' }}>Quick Access</Text>
+        <View className="flex-row" style={{ gap: 10 }}>
+          <TouchableOpacity
+            onPress={() => router.push('/inventory')}
+            activeOpacity={0.9}
+            className="flex-1 rounded-[26px] p-4"
+            style={{
+              backgroundColor: isDark ? '#0b1822' : '#ffffff',
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb',
+            }}
+          >
+            <View className="w-11 h-11 rounded-2xl items-center justify-center" style={{ backgroundColor: '#14b8a61a' }}>
+              <Archive size={20} color="#14b8a6" />
+            </View>
+            <Text className="mt-4 text-base font-bold" style={{ color: isDark ? '#fff' : '#0f172a' }}>Inventory</Text>
+            <Text className="mt-1 text-xs leading-5" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+              Track your shared and claimed food listings.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push('/notifications')}
+            activeOpacity={0.9}
+            className="flex-1 rounded-[26px] p-4"
+            style={{
+              backgroundColor: isDark ? '#0b1822' : '#ffffff',
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb',
+            }}
+          >
+            <View className="w-11 h-11 rounded-2xl items-center justify-center" style={{ backgroundColor: '#0ea5e91a' }}>
+              <Bell size={20} color="#0284c7" />
+            </View>
+            <Text className="mt-4 text-base font-bold" style={{ color: isDark ? '#fff' : '#0f172a' }}>Notifications</Text>
+            <Text className="mt-1 text-xs leading-5" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+              Review unread activity and recent claim updates.
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Menu Section */}
       <View className="px-6 mb-10">
         <Text className="text-lg font-bold" style={{ color: isDark ? '#fff' : '#0f172a' }}>Account</Text>
         
+        <MenuItem 
+          icon={Archive}
+          label="Inventory"
+          onPress={() => router.push('/inventory')}
+          color="#14b8a6"
+        />
+
+        <MenuItem
+          icon={Bell}
+          label="Notifications"
+          onPress={() => router.push('/notifications')}
+          color="#0284c7"
+        />
+
         <MenuItem 
           icon={Settings} 
           label="Settings" 

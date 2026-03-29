@@ -3,12 +3,13 @@ import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, Ale
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { api } from '../../services/api';
-import { ChevronLeft, MapPin, Clock, Tag, MessageCircle, AlertTriangle } from 'lucide-react-native';
+import { ChevronLeft, MapPin, Clock, Tag, MessageCircle, AlertTriangle, Archive, Sparkles } from 'lucide-react-native';
 import { formatDistanceToNow, format } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
 import { getCurrencySymbol } from '../../utils/currencies';
 import type { Item } from '../../store';
+import { StatusPopup } from '../../components/ui/States';
 
 type ItemDetailResponse = Item & {
   userId: string;
@@ -44,6 +45,12 @@ export default function ItemDetail() {
   const [item, setItem] = useState<ItemDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
+  const [statusPopup, setStatusPopup] = useState<{
+    type: 'success' | 'error' | 'info';
+    title: string;
+    description?: string;
+    onConfirm?: () => void;
+  } | null>(null);
 
   const fetchItemDetails = useCallback(async () => {
     try {
@@ -67,17 +74,29 @@ export default function ItemDetail() {
       setClaiming(true);
       const token = await getToken();
       if (!token) {
-        Alert.alert('Login required', 'Please login again to claim this item.');
+        setStatusPopup({
+          type: 'info',
+          title: 'Login required',
+          description: 'Please login again to claim this item.',
+        });
         return;
       }
       await api.post(`/items/${id}/claim`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      Alert.alert('Success', 'Item claimed successfully!');
+      setStatusPopup({
+        type: 'success',
+        title: 'Item claimed',
+        description: 'This listing is now added to your claimed inventory.',
+      });
       fetchItemDetails();
     } catch (error) {
       console.error('Claim error:', error);
-      Alert.alert('Error', getErrorMessage(error, 'Failed to claim item.'));
+      setStatusPopup({
+        type: 'error',
+        title: 'Claim failed',
+        description: getErrorMessage(error, 'Failed to claim item.'),
+      });
     } finally {
       setClaiming(false);
     }
@@ -87,7 +106,11 @@ export default function ItemDetail() {
     try {
       const token = await getToken();
       if (!token) {
-        Alert.alert('Login required', 'Please login again to start a conversation.');
+        setStatusPopup({
+          type: 'info',
+          title: 'Login required',
+          description: 'Please login again to start a conversation.',
+        });
         return;
       }
 
@@ -100,11 +123,14 @@ export default function ItemDetail() {
       const response = await api.post('/messages/start', { receiverId }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Navigate to the messages screen with the conversation ID
       router.push(`/messages/${response.data.id}`);
     } catch (error) {
       console.error('Message error:', error);
-      Alert.alert('Error', 'Failed to start conversation.');
+      setStatusPopup({
+        type: 'error',
+        title: 'Chat unavailable',
+        description: 'Failed to start conversation.',
+      });
     }
   };
 
@@ -140,12 +166,30 @@ export default function ItemDetail() {
   }
 
   const isOwner = item.userId === userId;
+  const expiryDate = item?.expiryDate ? new Date(item.expiryDate) : null;
+  const hoursLeft = expiryDate ? Math.max(Math.round((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60)), 0) : null;
+  const urgency = hoursLeft === null
+    ? 'Expiry time unavailable'
+    : hoursLeft <= 12
+      ? 'Urgent pickup suggested'
+      : hoursLeft <= 36
+        ? 'Best picked up soon'
+        : 'Still has some time left';
 
   const currencySymbol = getCurrencySymbol(item.priceCurrency);
   const displayPrice = item.discountedPrice ?? item.originalPrice ?? 0;
 
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+      <StatusPopup
+        visible={!!statusPopup}
+        type={statusPopup?.type || 'info'}
+        title={statusPopup?.title || ''}
+        description={statusPopup?.description}
+        primaryLabel="OK"
+        onPrimary={() => statusPopup?.onConfirm?.()}
+        onClose={() => setStatusPopup(null)}
+      />
       <ScrollView bounces={false} contentContainerStyle={{ paddingBottom: 120 }}>
         <View className="relative">
           <Image
@@ -214,6 +258,20 @@ export default function ItemDetail() {
               ) : null}
             </View>
 
+            <View className="mt-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-4">
+              <View className="flex-row items-center">
+                <Sparkles size={16} color="#10b981" />
+                <Text className="ml-2 text-sm font-bold text-emerald-700 dark:text-emerald-300">{urgency}</Text>
+              </View>
+              <Text className="mt-2 text-sm text-emerald-800 dark:text-emerald-200">
+                {isOwner
+                  ? 'You posted this item. Keep the details fresh so interested users can act quickly.'
+                  : item.status === 'AVAILABLE'
+                    ? 'If you want this item, message the owner or claim it before the expiry window closes.'
+                    : 'This listing is no longer open for claiming, but you can still contact the owner for context.'}
+              </Text>
+            </View>
+
             <View className="mt-5">
               <Text className="text-base font-bold text-slate-900 dark:text-white mb-2">Description</Text>
               <Text className="text-[15px] leading-6 text-slate-700 dark:text-slate-300">{item.description || 'No description provided.'}</Text>
@@ -253,22 +311,51 @@ export default function ItemDetail() {
               ) : null}
             </View>
 
-            {!isOwner && item.status === 'AVAILABLE' ? (
+            {isOwner ? (
               <TouchableOpacity
-                onPress={handleClaim}
-                disabled={claiming}
-                className="mt-7 rounded-2xl overflow-hidden"
-                activeOpacity={0.9}
+                onPress={() => router.push('/inventory')}
+                className="mt-7 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/70 py-4 px-4 flex-row items-center justify-center"
+                activeOpacity={0.88}
               >
-                <LinearGradient colors={['#10b981', '#059669']} className="py-4 items-center">
-                  {claiming ? <ActivityIndicator color="#ffffff" /> : <Text className="text-white text-base font-extrabold">Claim Item</Text>}
-                </LinearGradient>
+                <Archive size={18} color={isDark ? '#e2e8f0' : '#0f172a'} />
+                <Text className="ml-2 text-slate-900 dark:text-white font-extrabold">Manage In Inventory</Text>
               </TouchableOpacity>
+            ) : null}
+
+            {!isOwner && item.status === 'AVAILABLE' ? (
+              <View className="mt-7 flex-row">
+                <TouchableOpacity
+                  onPress={handleMessageUser}
+                  className="flex-1 mr-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-4 items-center"
+                  activeOpacity={0.9}
+                >
+                  <View className="flex-row items-center">
+                    <MessageCircle size={17} color={isDark ? '#f8fafc' : '#0f172a'} />
+                    <Text className="ml-2 text-slate-900 dark:text-white text-base font-extrabold">Message</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleClaim}
+                  disabled={claiming}
+                  className="flex-1 ml-2 rounded-2xl overflow-hidden"
+                  activeOpacity={0.9}
+                >
+                  <LinearGradient colors={['#10b981', '#059669']} className="py-4 items-center justify-center">
+                    {claiming ? <ActivityIndicator color="#ffffff" /> : <Text className="text-white text-base font-extrabold">Claim Item</Text>}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
             ) : null}
 
             {item.status === 'CLAIMED' ? (
               <View className="mt-7 rounded-2xl p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                 <Text className="text-center text-amber-700 dark:text-amber-300 font-bold">This item has been claimed</Text>
+                {!isOwner ? (
+                  <TouchableOpacity onPress={handleMessageUser} className="mt-3 self-center px-4 py-2 rounded-xl bg-amber-100 dark:bg-amber-900/40" activeOpacity={0.88}>
+                    <Text className="text-amber-800 dark:text-amber-200 font-semibold">Message owner anyway</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
             ) : null}
           </View>

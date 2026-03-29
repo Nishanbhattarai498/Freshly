@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { Bell, CheckCheck, MessageCircle, ShieldCheck } from 'lucide-react-native';
@@ -31,11 +31,17 @@ export default function NotificationsScreen() {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   const unreadCount = useMemo(() => items.filter((i) => !i.read).length, [items]);
+  const visibleItems = useMemo(
+    () => (filter === 'unread' ? items.filter((item) => !item.read) : items),
+    [filter, items]
+  );
 
-  const loadNotifications = useCallback(async () => {
-    setLoading(true);
+  const loadNotifications = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await api.get('/notifications');
       setItems(Array.isArray(response.data) ? response.data : []);
@@ -43,11 +49,17 @@ export default function NotificationsScreen() {
       setItems([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
     loadNotifications();
+  }, [loadNotifications]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadNotifications(true);
   }, [loadNotifications]);
 
   const openNotification = async (item: AppNotification) => {
@@ -96,6 +108,24 @@ export default function NotificationsScreen() {
             <Text className="text-emerald-700 dark:text-emerald-200 text-xs font-bold">{markingAll ? '...' : 'Mark all read'}</Text>
           </Pressable>
         </View>
+
+        <View className="mt-4 flex-row">
+          {[
+            { key: 'all' as const, label: `All (${items.length})` },
+            { key: 'unread' as const, label: `Unread (${unreadCount})` },
+          ].map((option) => {
+            const active = filter === option.key;
+            return (
+              <Pressable
+                key={option.key}
+                onPress={() => setFilter(option.key)}
+                className={`mr-2 px-4 py-2 rounded-full border ${active ? 'bg-emerald-600 border-emerald-600' : 'bg-white/70 dark:bg-slate-900/60 border-emerald-200 dark:border-slate-700'}`}
+              >
+                <Text className={`text-xs font-bold ${active ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{option.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </LinearGradient>
 
       {loading ? (
@@ -104,13 +134,23 @@ export default function NotificationsScreen() {
         </View>
       ) : (
         <FlatList
-          data={items}
+          data={visibleItems}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#10b981"
+              colors={['#10b981']}
+            />
+          }
           ListEmptyComponent={
             <View className="items-center mt-24">
               <Bell size={46} color={isDark ? '#64748b' : '#94a3b8'} />
-              <Text className="mt-3 text-gray-500 dark:text-gray-400">Nothing new right now.</Text>
+              <Text className="mt-3 text-gray-500 dark:text-gray-400">
+                {filter === 'unread' ? 'You are all caught up.' : 'Nothing new right now.'}
+              </Text>
             </View>
           }
           renderItem={({ item }) => (

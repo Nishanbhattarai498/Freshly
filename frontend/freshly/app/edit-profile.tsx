@@ -7,6 +7,7 @@ import { Camera, ImagePlus, Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../services/api';
 import Button from '../components/ui/Button';
+import { StatusPopup } from '../components/ui/States';
 
 type MeResponse = {
   displayName?: string;
@@ -23,20 +24,26 @@ export default function EditProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [status, setStatus] = useState('');
+  const [statusPopup, setStatusPopup] = useState<{
+    type: 'success' | 'error' | 'info';
+    title: string;
+    description?: string;
+  } | null>(null);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      try {
-        const response = await api.get('/users/me');
-        const me = response.data as MeResponse;
-        setDisplayName(me.displayName || '');
-        setAvatarUrl(me.avatarUrl || '');
-      } catch {
-        setStatus('Failed to load profile.');
-      } finally {
-        setLoading(false);
-      }
+    try {
+      const response = await api.get('/users/me');
+      const me = response.data as MeResponse;
+      setDisplayName(me.displayName || '');
+      setAvatarUrl(me.avatarUrl || '');
+      setStatus('');
+    } catch {
+      setStatus('Failed to load profile.');
+    } finally {
+      setLoading(false);
+    }
     };
 
     load();
@@ -57,8 +64,18 @@ export default function EditProfileScreen() {
         avatarUrl: normalizedAvatar || undefined,
       });
       setStatus('Profile updated successfully.');
+      setStatusPopup({
+        type: 'success',
+        title: 'Profile updated',
+        description: 'Your latest name and photo are now saved.',
+      });
     } catch {
       setStatus('Could not update profile.');
+      setStatusPopup({
+        type: 'error',
+        title: 'Update failed',
+        description: 'We could not save your profile changes. Please try again.',
+      });
     } finally {
       setSaving(false);
     }
@@ -150,6 +167,13 @@ export default function EditProfileScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
     >
+      <StatusPopup
+        visible={!!statusPopup}
+        type={statusPopup?.type || 'info'}
+        title={statusPopup?.title || ''}
+        description={statusPopup?.description}
+        onClose={() => setStatusPopup(null)}
+      />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -165,6 +189,13 @@ export default function EditProfileScreen() {
         </LinearGradient>
 
         <View className="px-6 mt-6">
+          <View className="rounded-3xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50 p-4 mb-4">
+            <Text className="text-xs font-bold uppercase tracking-[2px] text-emerald-700 dark:text-emerald-300">Profile tip</Text>
+            <Text className="text-sm mt-2 leading-6 text-emerald-800 dark:text-emerald-100">
+              A clear name and photo make chats and item claims feel more trustworthy for other people using the app.
+            </Text>
+          </View>
+
           <View className="rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <View className="items-center mb-5">
             <Image
@@ -212,6 +243,24 @@ export default function EditProfileScreen() {
             className="rounded-2xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-slate-900 mb-4"
             returnKeyType="next"
           />
+
+          <View className="rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-gray-100 dark:border-gray-800 px-4 py-3 mb-4">
+            <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-gray-500 dark:text-gray-400">Live preview</Text>
+            <View className="flex-row items-center mt-3">
+              <Image
+                source={{ uri: avatarUrl || 'https://via.placeholder.com/120' }}
+                className="w-12 h-12 rounded-full border border-gray-200 dark:border-gray-700"
+              />
+              <View className="ml-3 flex-1">
+                <Text className="text-base font-bold text-slate-900 dark:text-white" numberOfLines={1}>
+                  {displayName.trim() || 'Your display name'}
+                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                  This is how other users will see you in chats and listings.
+                </Text>
+              </View>
+            </View>
+          </View>
 
           <Button label={saving ? 'Saving...' : 'Save Changes'} onPress={save} loading={saving} />
           {status ? <Text className="text-sm text-gray-600 dark:text-gray-300 mt-3">{status}</Text> : null}
