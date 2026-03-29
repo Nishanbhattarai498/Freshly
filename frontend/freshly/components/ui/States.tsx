@@ -3,6 +3,7 @@ import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
 import { getThemeTokens, gradients, radii, shadows, spacing, typography } from './theme';
+import { Check, CircleAlert, Info } from 'lucide-react-native';
 
 type LoadingViewProps = {
   message?: string;
@@ -125,6 +126,8 @@ export const StatusPopup = ({
   const effectiveTitle = title || (type === 'success' ? 'Success' : type === 'error' ? 'Something went wrong' : 'Notice');
   const effectiveMessage = message || description || '';
   const accent = type === 'success' ? tokens.success : type === 'error' ? tokens.danger : '#0ea5e9';
+  const isSuccess = type === 'success';
+  const StatusIcon = type === 'success' ? Check : type === 'error' ? CircleAlert : Info;
 
   return (
     <View
@@ -134,7 +137,7 @@ export const StatusPopup = ({
         bottom: 0,
         left: 0,
         right: 0,
-        justifyContent: 'flex-end',
+        justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(2,6,23,0.4)',
         padding: spacing.md,
@@ -144,62 +147,108 @@ export const StatusPopup = ({
       <View
         style={{
           backgroundColor: tokens.card,
-          padding: spacing.lg,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: isSuccess ? spacing.xl : spacing.lg,
           borderRadius: radii.xxl,
           width: '100%',
+          maxWidth: isSuccess ? 320 : 420,
           borderWidth: 1,
           borderColor: tokens.border,
+          alignItems: isSuccess ? 'center' : 'stretch',
           ...shadows.medium,
         }}
       >
-        <View
-          style={{
-            width: 48,
-            height: 6,
-            borderRadius: radii.full,
-            backgroundColor: accent,
-            marginBottom: spacing.md,
-          }}
-        />
-        <Text style={{ color: tokens.textPrimary, fontWeight: '900', fontSize: 18 }}>{effectiveTitle}</Text>
-        {effectiveMessage ? <Text style={{ color: tokens.textSecondary, marginTop: spacing.sm, lineHeight: 22 }}>{effectiveMessage}</Text> : null}
-
-        <View style={{ flexDirection: 'row', marginTop: spacing.lg }}>
-          {secondaryLabel ? (
+        {isSuccess ? (
+          <>
+            <LinearGradient
+              colors={isDark ? ['#0f766e', '#14b8a6'] : ['#10b981', '#34d399']}
+              style={{
+                width: 92,
+                height: 92,
+                borderRadius: 46,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: spacing.lg,
+              }}
+            >
+              <StatusIcon size={40} color="#ffffff" strokeWidth={2.7} />
+            </LinearGradient>
+            <Text style={{ color: tokens.textPrimary, fontWeight: '900', fontSize: 22, textAlign: 'center' }}>{effectiveTitle}</Text>
+            {effectiveMessage ? (
+              <Text style={{ color: tokens.textSecondary, marginTop: spacing.sm, lineHeight: 22, textAlign: 'center' }}>
+                {effectiveMessage}
+              </Text>
+            ) : null}
             <Pressable
               onPress={() => {
-                onSecondary?.();
+                onPrimary?.();
                 onClose?.();
               }}
               style={{
-                flex: 1,
-                marginRight: spacing.sm,
+                marginTop: spacing.lg,
+                minWidth: 150,
                 paddingVertical: spacing.sm,
-                borderRadius: radii.lg,
-                backgroundColor: isDark ? '#132434' : '#eef5f4',
+                paddingHorizontal: spacing.lg,
+                borderRadius: radii.full,
+                backgroundColor: accent,
                 alignItems: 'center',
               }}
             >
-              <Text style={{ color: tokens.textPrimary, fontWeight: '800' }}>{secondaryLabel}</Text>
+              <Text style={{ color: '#ffffff', fontWeight: '800' }}>{primaryLabel || 'OK'}</Text>
             </Pressable>
-          ) : null}
+          </>
+        ) : (
+          <>
+            <View
+              style={{
+                width: 48,
+                height: 6,
+                borderRadius: radii.full,
+                backgroundColor: accent,
+                marginBottom: spacing.md,
+              }}
+            />
+            <Text style={{ color: tokens.textPrimary, fontWeight: '900', fontSize: 18 }}>{effectiveTitle}</Text>
+            {effectiveMessage ? <Text style={{ color: tokens.textSecondary, marginTop: spacing.sm, lineHeight: 22 }}>{effectiveMessage}</Text> : null}
 
-          <Pressable
-            onPress={() => {
-              onPrimary?.();
-              onClose?.();
-            }}
-            style={{
-              flex: 1,
-              paddingVertical: spacing.sm,
-              borderRadius: radii.lg,
-              backgroundColor: accent,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: '#ffffff', fontWeight: '800' }}>{primaryLabel || 'OK'}</Text>
-          </Pressable>
-        </View>
+            <View style={{ flexDirection: 'row', marginTop: spacing.lg }}>
+              {secondaryLabel ? (
+                <Pressable
+                  onPress={() => {
+                    onSecondary?.();
+                    onClose?.();
+                  }}
+                  style={{
+                    flex: 1,
+                    marginRight: spacing.sm,
+                    paddingVertical: spacing.sm,
+                    borderRadius: radii.lg,
+                    backgroundColor: isDark ? '#132434' : '#eef5f4',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: tokens.textPrimary, fontWeight: '800' }}>{secondaryLabel}</Text>
+                </Pressable>
+              ) : null}
+
+              <Pressable
+                onPress={() => {
+                  onPrimary?.();
+                  onClose?.();
+                }}
+                style={{
+                  flex: 1,
+                  paddingVertical: spacing.sm,
+                  borderRadius: radii.lg,
+                  backgroundColor: accent,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: '#ffffff', fontWeight: '800' }}>{primaryLabel || 'OK'}</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
       </View>
     </View>
   );

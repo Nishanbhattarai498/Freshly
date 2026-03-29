@@ -186,6 +186,14 @@ export default function Profile() {
     </TouchableOpacity>
   );
 
+  const achievementPreviewCards = achievements
+    ? [
+        { id: 'share', title: 'Sharing', icon: Award, color: '#22c55e', value: achievements.stats.shared || 0, target: 15 },
+        { id: 'claim', title: 'Claiming', icon: Star, color: '#f59e0b', value: achievements.stats.claimed || 0, target: 15 },
+        { id: 'streak', title: 'Streak', icon: Flame, color: '#ef4444', value: achievements.stats.streak.current || 0, target: 7 },
+      ]
+    : [];
+
   return (
     <ScrollView className="flex-1 bg-[#f4f8f6] dark:bg-[#06131f]" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
       <View className="px-6 mb-8" style={{ paddingTop: Math.max(12, insets.top + 4) }}>
@@ -289,7 +297,7 @@ export default function Profile() {
 
       <View className="px-6 mb-8">
         <View
-          className="rounded-[30px] p-4"
+          className="rounded-[30px] p-5"
           style={{
             backgroundColor: isDark ? 'rgba(8,20,29,0.84)' : 'rgba(255,255,255,0.92)',
             borderWidth: 1,
@@ -300,10 +308,10 @@ export default function Profile() {
             shadowOffset: { width: 0, height: 12 },
           }}
         >
-          <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center justify-between mb-4">
             <View>
               <Text className="text-lg font-bold" style={{ color: isDark ? '#fff' : '#0f172a' }}>Achievements</Text>
-              <Text className="text-xs mt-1" style={{ color: isDark ? '#94a3b8' : '#475569' }}>Progress, rank, and streak</Text>
+              <Text className="text-xs mt-1" style={{ color: isDark ? '#94a3b8' : '#475569' }}>Progress, streak, and leaderboard snapshot</Text>
             </View>
             <TouchableOpacity onPress={() => router.push('/achievements')} className="px-3 py-1 rounded-full" style={{ backgroundColor: '#22c55e1a' }}>
               <Text className="text-xs font-semibold" style={{ color: '#16a34a' }}>View all</Text>
@@ -318,52 +326,87 @@ export default function Profile() {
 
           {!achievementsLoading && achievements && (
             <>
-              <View className="flex-row mb-3">
-                <LinearGradient colors={['#0f766e', '#14b8a6', '#38bdf8']} className="flex-1 rounded-[24px] p-3 mr-2">
-                  <View className="flex-row items-center justify-between">
-                    <View>
-                      <Text className="text-white text-xs opacity-80">Active streak</Text>
-                      <Text className="text-2xl font-extrabold text-white">{achievements.stats.streak.current}d</Text>
-                      <Text className="text-[11px] text-white/80 mt-1">Best {achievements.stats.streak.best}d</Text>
-                    </View>
-                    <Flame size={36} color="#fff" />
+              <LinearGradient
+                colors={isDark ? ['#10263a', '#0f766e', '#14b8a6'] : ['#ecfeff', '#d1fae5', '#dbeafe']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="rounded-[28px] p-4"
+              >
+                <View className="flex-row items-start justify-between">
+                  <View className="flex-1 pr-4">
+                    <Text className="text-[11px] font-bold uppercase tracking-[2px]" style={{ color: isDark ? 'rgba(255,255,255,0.74)' : '#0f766e' }}>
+                      Momentum
+                    </Text>
+                    <Text className="text-3xl font-black mt-2" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>
+                      {achievements.stats.streak.current}d
+                    </Text>
+                    <Text className="text-sm mt-1" style={{ color: isDark ? 'rgba(255,255,255,0.8)' : '#475569' }}>
+                      Active streak
+                    </Text>
+                    <Text className="text-[12px] mt-3" style={{ color: isDark ? 'rgba(255,255,255,0.72)' : '#0f766e' }}>
+                      Best streak {achievements.stats.streak.best}d
+                    </Text>
                   </View>
-                </LinearGradient>
-                <View className="flex-1 bg-gray-50 dark:bg-[#102232] rounded-[24px] p-3 ml-2 border border-gray-100 dark:border-white/10">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-xs text-gray-500 dark:text-gray-400">Ranks</Text>
-                    <Trophy size={18} color="#f59e0b" />
+                  <View className="w-14 h-14 rounded-[20px] items-center justify-center" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.72)' }}>
+                    <Flame size={30} color={isDark ? '#fff' : '#ef4444'} />
                   </View>
-                  <Text className="text-base font-bold text-gray-900 dark:text-white mt-1">Share {achievements.rank.shared ? `#${achievements.rank.shared}` : '—'}</Text>
-                  <Text className="text-sm font-semibold text-gray-600 dark:text-gray-300">Claim {achievements.rank.claimed ? `#${achievements.rank.claimed}` : '—'}</Text>
                 </View>
-              </View>
 
-              {[
-                { id: 'share', title: 'Sharing', icon: Award, color: '#22c55e', value: achievements?.stats.shared || 0, target: 15 },
-                { id: 'claim', title: 'Claiming', icon: Star, color: '#f59e0b', value: achievements?.stats.claimed || 0, target: 15 },
-                { id: 'streak', title: 'Streak', icon: Flame, color: '#ef4444', value: achievements?.stats.streak.current || 0, target: 7 },
-              ].map((a) => {
+                <View className="mt-4 flex-row">
+                  <View className="flex-1 mr-2 rounded-[22px] px-4 py-3" style={{ backgroundColor: isDark ? 'rgba(6,19,31,0.42)' : 'rgba(255,255,255,0.78)' }}>
+                    <Text className="text-[11px] uppercase tracking-[1.4px]" style={{ color: isDark ? '#99f6e4' : '#0f766e' }}>Share Rank</Text>
+                    <Text className="text-xl font-black mt-1" style={{ color: isDark ? '#fff' : '#0f172a' }}>
+                      {achievements.rank.shared ? `#${achievements.rank.shared}` : '--'}
+                    </Text>
+                  </View>
+                  <View className="flex-1 ml-2 rounded-[22px] px-4 py-3" style={{ backgroundColor: isDark ? 'rgba(6,19,31,0.42)' : 'rgba(255,255,255,0.78)' }}>
+                    <Text className="text-[11px] uppercase tracking-[1.4px]" style={{ color: isDark ? '#bfdbfe' : '#0369a1' }}>Claim Rank</Text>
+                    <Text className="text-xl font-black mt-1" style={{ color: isDark ? '#fff' : '#0f172a' }}>
+                      {achievements.rank.claimed ? `#${achievements.rank.claimed}` : '--'}
+                    </Text>
+                  </View>
+                </View>
+              </LinearGradient>
+
+              <View className="mt-4">
+                {achievementPreviewCards.map((a) => {
                 const pct = Math.min(100, Math.round((a.value / a.target) * 100));
                 const IconComp = a.icon;
                 return (
-                  <View key={a.id} className="mb-3">
-                    <View className="flex-row items-center mb-2">
-                      <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: `${a.color}20` }}>
+                  <View
+                    key={a.id}
+                    className="mb-3 rounded-[24px] px-4 py-4 border"
+                    style={{
+                      backgroundColor: isDark ? 'rgba(16,34,50,0.7)' : '#f8fafc',
+                      borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb',
+                    }}
+                  >
+                    <View className="flex-row items-center">
+                      <View className="w-11 h-11 rounded-[18px] items-center justify-center mr-3" style={{ backgroundColor: `${a.color}18` }}>
                         <IconComp size={20} color={a.color} />
                       </View>
                       <View className="flex-1">
-                        <Text className="text-sm font-semibold text-gray-900 dark:text-white">{a.title}</Text>
-                        <Text className="text-xs text-gray-500 dark:text-gray-400">{Math.min(a.value, a.target)} / {a.target}</Text>
+                        <Text className="text-sm font-bold text-gray-900 dark:text-white">{a.title}</Text>
+                        <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {Math.min(a.value, a.target)} of {a.target} reached
+                        </Text>
                       </View>
-                      <Text className="text-xs font-semibold text-gray-700 dark:text-gray-300">{pct}%</Text>
+                      <View className="px-3 py-1 rounded-full" style={{ backgroundColor: `${a.color}14` }}>
+                        <Text className="text-xs font-bold" style={{ color: a.color }}>{pct}%</Text>
+                      </View>
                     </View>
-                    <View className="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <View className="h-2 rounded-full" style={{ width: `${pct}%`, backgroundColor: a.color }} />
+
+                    <View className="h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mt-4">
+                      <LinearGradient
+                        colors={[a.color, a.color]}
+                        className="h-2.5 rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
                     </View>
                   </View>
                 );
               })}
+              </View>
             </>
           )}
         </View>

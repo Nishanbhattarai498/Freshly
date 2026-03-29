@@ -90,6 +90,12 @@ export default function AchievementsScreen() {
     return <ErrorView message={error} onRetry={() => void loadAchievements()} />;
   }
 
+  const currentStreak = data?.stats.streak.current ?? 0;
+  const bestStreak = data?.stats.streak.best ?? 0;
+  const sharedCount = data?.stats.shared ?? 0;
+  const claimedCount = data?.stats.claimed ?? 0;
+  const milestoneProgress = milestone ? Math.min(100, Math.round((milestone.value / milestone.target) * 100)) : 0;
+
   return (
     <ScrollView
       className="flex-1 bg-slate-50 dark:bg-slate-950"
@@ -124,59 +130,107 @@ export default function AchievementsScreen() {
       </LinearGradient>
 
       <View className="px-6 mt-6">
-        <View className="rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
-          <View className="flex-row justify-between">
-            <View className="items-center flex-1">
-              <Flame size={20} color="#ef4444" />
-              <Text className="text-lg font-black text-gray-900 dark:text-white mt-1">{data?.stats.streak.current ?? 0}d</Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400">Current streak</Text>
+        <LinearGradient
+          colors={isDark ? ['#111827', '#0f766e'] : ['#ffffff', '#ecfeff']}
+          className="rounded-[30px] border border-white/40 dark:border-slate-800 p-5 shadow-sm"
+        >
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 pr-4">
+              <Text className="text-xs font-bold uppercase tracking-[2px] text-teal-700 dark:text-teal-200">Momentum</Text>
+              <Text className="text-3xl font-black text-slate-900 dark:text-white mt-2">{currentStreak} day streak</Text>
+              <Text className="text-sm text-slate-600 dark:text-slate-300 mt-2">
+                Best streak: {bestStreak} days. Keep sharing and claiming consistently to stay on top.
+              </Text>
             </View>
-            <View className="items-center flex-1">
-              <PackageOpen size={20} color="#10b981" />
-              <Text className="text-lg font-black text-gray-900 dark:text-white mt-1">{data?.stats.shared ?? 0}</Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400">Shared</Text>
+            <View className="w-16 h-16 rounded-[22px] bg-white/80 dark:bg-white/10 items-center justify-center">
+              <Flame size={28} color="#ef4444" />
             </View>
-            <View className="items-center flex-1">
-              <HandHeart size={20} color="#f59e0b" />
-              <Text className="text-lg font-black text-gray-900 dark:text-white mt-1">{data?.stats.claimed ?? 0}</Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400">Claimed</Text>
+          </View>
+
+          <View className="mt-5 flex-row">
+            <View className="flex-1 mr-2 rounded-[24px] bg-white/80 dark:bg-slate-900/60 px-4 py-4 border border-white/50 dark:border-slate-700">
+              <View className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 items-center justify-center">
+                <PackageOpen size={18} color="#10b981" />
+              </View>
+              <Text className="text-2xl font-black text-slate-900 dark:text-white mt-4">{sharedCount}</Text>
+              <Text className="text-xs uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400 mt-1">Items Shared</Text>
+            </View>
+            <View className="flex-1 ml-2 rounded-[24px] bg-white/80 dark:bg-slate-900/60 px-4 py-4 border border-white/50 dark:border-slate-700">
+              <View className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/30 items-center justify-center">
+                <HandHeart size={18} color="#f59e0b" />
+              </View>
+              <Text className="text-2xl font-black text-slate-900 dark:text-white mt-4">{claimedCount}</Text>
+              <Text className="text-xs uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400 mt-1">Items Claimed</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        <View className="mt-5 rounded-[28px] bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-lg font-bold text-gray-900 dark:text-white">Your Rank</Text>
+            <View className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800">
+              <Text className="text-[11px] font-bold uppercase tracking-[1.3px] text-slate-500 dark:text-slate-300">Live</Text>
+            </View>
+          </View>
+          <View className="mt-4 flex-row">
+            <View className="flex-1 mr-2 rounded-[22px] bg-slate-50 dark:bg-slate-800/80 px-4 py-4">
+              <Text className="text-xs uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400">Sharing</Text>
+              <Text className="text-2xl font-black text-slate-900 dark:text-white mt-2">{data?.rank.shared ? `#${data.rank.shared}` : '--'}</Text>
+              <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1">{data?.rank.shared ? 'Among top sharers' : 'Not ranked yet'}</Text>
+            </View>
+            <View className="flex-1 ml-2 rounded-[22px] bg-slate-50 dark:bg-slate-800/80 px-4 py-4">
+              <Text className="text-xs uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400">Claiming</Text>
+              <Text className="text-2xl font-black text-slate-900 dark:text-white mt-2">{data?.rank.claimed ? `#${data.rank.claimed}` : '--'}</Text>
+              <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1">{data?.rank.claimed ? 'Among top claimers' : 'Not ranked yet'}</Text>
             </View>
           </View>
         </View>
 
-        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
-          <Text className="text-lg font-bold text-gray-900 dark:text-white">Your Rank</Text>
-          <Text className="text-sm text-gray-600 dark:text-gray-400 mt-2">Sharing: {data?.rank.shared ? `#${data.rank.shared}` : 'Not ranked yet'}</Text>
-          <Text className="text-sm text-gray-600 dark:text-gray-400">Claiming: {data?.rank.claimed ? `#${data.rank.claimed}` : 'Not ranked yet'}</Text>
-        </View>
-
         {milestone ? (
-          <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
-            <Text className="text-lg font-bold text-gray-900 dark:text-white">Next Milestone</Text>
+          <View className="mt-5 rounded-[28px] bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-lg font-bold text-gray-900 dark:text-white">Next Milestone</Text>
+              <View className="px-3 py-1 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f8fafc' }}>
+                <Text className="text-[11px] font-bold uppercase tracking-[1.2px]" style={{ color: milestone.tone }}>
+                  {milestoneProgress}%
+                </Text>
+              </View>
+            </View>
             <Text className="text-sm text-gray-600 dark:text-gray-400 mt-2">
               {milestone.remaining === 0
                 ? `You already reached your ${milestone.label}. Keep going.`
                 : `You are ${milestone.remaining} away from your ${milestone.label}.`}
             </Text>
-            <View className="h-2 w-full rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 mt-4">
+            <View className="h-2.5 w-full rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 mt-4">
               <View
-                className="h-2 rounded-full"
-                style={{ width: `${Math.min(100, Math.round((milestone.value / milestone.target) * 100))}%`, backgroundColor: milestone.tone }}
+                className="h-2.5 rounded-full"
+                style={{ width: `${milestoneProgress}%`, backgroundColor: milestone.tone }}
               />
+            </View>
+            <View className="mt-4 flex-row justify-between">
+              <Text className="text-xs text-slate-500 dark:text-slate-400">Current: {milestone.value}</Text>
+              <Text className="text-xs text-slate-500 dark:text-slate-400">Target: {milestone.target}</Text>
             </View>
           </View>
         ) : null}
 
-        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+        <View className="mt-5 rounded-[28px] bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <View className="flex-row items-center mb-3">
             <Trophy size={18} color="#eab308" />
             <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">Top Sharers</Text>
           </View>
           {(data?.leaderboard.sharers || []).length ? (
             (data?.leaderboard.sharers || []).slice(0, 5).map((user) => (
-              <View key={`sharer-${user.userId}`} className="py-2 border-b border-gray-100 dark:border-gray-800 flex-row justify-between">
-                <Text className="text-gray-900 dark:text-white font-semibold">#{user.position} {user.displayName}</Text>
-                <Text className="text-emerald-700 dark:text-emerald-200 font-bold">{user.count}</Text>
+              <View key={`sharer-${user.userId}`} className="py-3 border-b border-gray-100 dark:border-gray-800 flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1 pr-3">
+                  <View className="w-9 h-9 rounded-2xl bg-emerald-100 dark:bg-emerald-900/25 items-center justify-center mr-3">
+                    <Text className="text-xs font-black text-emerald-700 dark:text-emerald-200">#{user.position}</Text>
+                  </View>
+                  <Text className="text-gray-900 dark:text-white font-semibold flex-1" numberOfLines={1}>{user.displayName}</Text>
+                </View>
+                <View className="px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20">
+                  <Text className="text-emerald-700 dark:text-emerald-200 font-bold">{user.count}</Text>
+                </View>
               </View>
             ))
           ) : (
@@ -184,16 +238,23 @@ export default function AchievementsScreen() {
           )}
         </View>
 
-        <View className="mt-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+        <View className="mt-5 rounded-[28px] bg-white dark:bg-slate-900 border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <View className="flex-row items-center mb-3">
             <Trophy size={18} color="#eab308" />
             <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">Top Claimers</Text>
           </View>
           {(data?.leaderboard.claimers || []).length ? (
             (data?.leaderboard.claimers || []).slice(0, 5).map((user) => (
-              <View key={`claimer-${user.userId}`} className="py-2 border-b border-gray-100 dark:border-gray-800 flex-row justify-between">
-                <Text className="text-gray-900 dark:text-white font-semibold">#{user.position} {user.displayName}</Text>
-                <Text className="text-amber-700 dark:text-amber-200 font-bold">{user.count}</Text>
+              <View key={`claimer-${user.userId}`} className="py-3 border-b border-gray-100 dark:border-gray-800 flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1 pr-3">
+                  <View className="w-9 h-9 rounded-2xl bg-amber-100 dark:bg-amber-900/25 items-center justify-center mr-3">
+                    <Text className="text-xs font-black text-amber-700 dark:text-amber-200">#{user.position}</Text>
+                  </View>
+                  <Text className="text-gray-900 dark:text-white font-semibold flex-1" numberOfLines={1}>{user.displayName}</Text>
+                </View>
+                <View className="px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20">
+                  <Text className="text-amber-700 dark:text-amber-200 font-bold">{user.count}</Text>
+                </View>
               </View>
             ))
           ) : (

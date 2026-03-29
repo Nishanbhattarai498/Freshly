@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { Slot, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import Constants from 'expo-constants';
-import { StatusBar, Text, View } from 'react-native';
+import { Platform, StatusBar, Text, View } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { MessagesProvider } from '../contexts/MessagesContext';
 import { setAuthTokenProvider } from '../services/api';
@@ -88,16 +88,35 @@ const InitialLayout = () => {
     };
   }, [isLoaded, isSignedIn, router]);
 
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    let active = true;
+
+    const enableImmersiveMode = async () => {
+      try {
+        const NavigationBar = await import('expo-navigation-bar');
+        if (!active) return;
+        await NavigationBar.setVisibilityAsync('hidden');
+      } catch {
+        // Best effort only.
+      }
+    };
+
+    void enableImmersiveMode();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <View style={{ flex: 1, backgroundColor: appBg }}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={appBg}
-        translucent={false}
-      />
-      <SafeAreaView
-        edges={['top']}
-        style={{ backgroundColor: appBg }}
+        backgroundColor="transparent"
+        translucent
+        hidden
       />
       <View style={{ flex: 1, backgroundColor: appBg }}>
         <Slot />

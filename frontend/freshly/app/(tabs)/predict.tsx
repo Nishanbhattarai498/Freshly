@@ -1,12 +1,14 @@
-import React, { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { FlaskConical, Sparkles } from 'lucide-react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Download, FlaskConical, Sparkles } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { api } from '../../services/api';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
+import * as Sharing from 'expo-sharing';
+import { captureRef } from 'react-native-view-shot';
 
 type PredictionResponse = {
   prediction: 'Good' | 'Bad';
@@ -84,6 +86,12 @@ const formatRange = ([min, max]: [number, number], fractionDigits = 0) => {
   return `${min.toFixed(fractionDigits)} - ${max.toFixed(fractionDigits)}`;
 };
 
+const formatExportValue = (label: string, value: string, suffix = '') => {
+  const trimmed = value.trim();
+  if (!trimmed) return `${label}: --`;
+  return `${label}: ${trimmed}${suffix}`;
+};
+
 const getErrorMessage = (e: unknown, fallback: string) => {
   const err = e as { response?: { data?: { error?: string } }; message?: string };
   return err?.response?.data?.error || err?.message || fallback;
@@ -98,8 +106,10 @@ export default function PredictScreen() {
   const [light, setLight] = useState('8');
   const [co2, setCo2] = useState('350');
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<PredictionResponse | null>(null);
   const [error, setError] = useState('');
+  const resultCardRef = useRef<View | null>(null);
 
   const isDark = colorScheme === 'dark';
 
@@ -170,6 +180,47 @@ export default function PredictScreen() {
     const maxVal = Math.max(bad, good);
     return `${(maxVal * 100).toFixed(1)}%`;
   }, [result]);
+
+  const exportDetails = useMemo(
+    () => [
+      formatExportValue('Food', name),
+      formatExportValue('Temperature', temp, '°'),
+      formatExportValue('Humidity', humidity, '%'),
+      formatExportValue('Light', light),
+      formatExportValue('CO2', co2, ' ppm'),
+    ],
+    [co2, humidity, light, name, temp]
+  );
+
+  const handleExportPng = async () => {
+    if (!resultCardRef.current || !result) return;
+
+    setExporting(true);
+    try {
+      const uri = await captureRef(resultCardRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        Alert.alert('Export unavailable', 'PNG export sharing is not available on this device.');
+        return;
+      }
+
+      await Sharing.shareAsync(uri, {
+        mimeType: 'image/png',
+        dialogTitle: 'Export freshness image',
+        UTI: 'public.png',
+      });
+    } catch (captureError) {
+      console.error('Export PNG failed', captureError);
+      Alert.alert('Export failed', 'Could not export the prediction as a PNG right now.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -272,8 +323,8 @@ export default function PredictScreen() {
           ) : null}
 
           {result ? (
-            <View className="mt-5 p-5 rounded-3xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-700">
-              <Text className="text-xs uppercase tracking-[1.8px] text-emerald-800 dark:text-emerald-200 font-bold">Model Output</Text>
+            <View ref={resultCardRef} collapsable={false} className="mt-5 p-5 rounded-3xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-700">
+              <Text className="text-xs uppercase tracking-[1.8px] text-emerald-800 dark:text-emerald-200 font-bold">Freshly AI Report</Text>
               <Text className="text-4xl font-black mt-1 text-emerald-900 dark:text-emerald-100">{result.prediction}</Text>
               {confidenceText ? (
                 <Text className="mt-2 text-base text-emerald-900 dark:text-emerald-200 font-semibold">Confidence: {confidenceText}</Text>
@@ -283,6 +334,38 @@ export default function PredictScreen() {
                   P(good): {(Number(result.probability.good || 0) * 100).toFixed(1)}% | P(bad): {(Number(result.probability.bad || 0) * 100).toFixed(1)}%
                 </Text>
               ) : null}
+
+              <View className="mt-4 rounded-2xl bg-white/80 dark:bg-emerald-950/45 border border-emerald-100 dark:border-emerald-900 px-4 py-4">
+                <Text className="text-xs uppercase tracking-[1.5px] text-emerald-700 dark:text-emerald-300 font-bold">Input Summary</Text>
+                <View className="mt-3">
+                  {exportDetails.map((detail) => (
+                    <Text key={detail} className="text-sm text-emerald-900 dark:text-emerald-100 mb-1.5">
+                      {detail}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+
+              <View className="mt-4 flex-row">
+                <View className="flex-1 mr-2 rounded-2xl bg-white/80 dark:bg-emerald-950/45 border border-emerald-100 dark:border-emerald-900 px-4 py-3">
+                  <Text className="text-[11px] uppercase tracking-[1.4px] text-emerald-700 dark:text-emerald-300 font-bold">Prediction</Text>
+                  <Text className="text-lg font-black text-emerald-900 dark:text-emerald-100 mt-1">{result.prediction}</Text>
+                </View>
+                <View className="flex-1 ml-2 rounded-2xl bg-white/80 dark:bg-emerald-950/45 border border-emerald-100 dark:border-emerald-900 px-4 py-3">
+                  <Text className="text-[11px] uppercase tracking-[1.4px] text-emerald-700 dark:text-emerald-300 font-bold">Confidence</Text>
+                  <Text className="text-lg font-black text-emerald-900 dark:text-emerald-100 mt-1">{confidenceText || '--'}</Text>
+                </View>
+              </View>
+
+              <Pressable
+                onPress={() => void handleExportPng()}
+                className="mt-4 self-start flex-row items-center px-4 py-3 rounded-2xl bg-white dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800"
+              >
+                <Download size={16} color={isDark ? '#d1fae5' : '#065f46'} />
+                <Text className="ml-2 text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                  {exporting ? 'Exporting...' : 'Export as Image'}
+                </Text>
+              </Pressable>
             </View>
           ) : null}
         </View>
