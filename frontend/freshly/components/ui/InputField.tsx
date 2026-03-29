@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, TextInput, Text, TouchableOpacity, type TextInputProps, type ViewStyle } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import { getThemeTokens, radii, shadows, spacing, typography } from './theme';
+import { getThemeTokens, radii, spacing, typography } from './theme';
 
 type InputFieldProps = TextInputProps & {
   label?: string;
@@ -46,6 +46,10 @@ export default function InputField({
       ? tokens.tint
       : tokens.inputBorder;
 
+  const inputBackgroundColor = isFocused
+    ? (isDark ? 'rgba(10, 28, 40, 0.98)' : '#fdfefe')
+    : tokens.inputBg;
+
   return (
     <View className={containerClassName} style={[{ marginBottom: spacing.md }, containerStyle]}>
       {label ? (
@@ -72,9 +76,8 @@ export default function InputField({
             borderColor: inputBorder,
             borderRadius: radii.xl,
             paddingHorizontal: spacing.md,
-            backgroundColor: tokens.inputBg,
+            backgroundColor: inputBackgroundColor,
             minHeight: multiline ? 118 : 58,
-            ...(isFocused ? shadows.soft : {}),
             ...(multiline ? { alignItems: 'flex-start', paddingTop: spacing.sm } : null),
           },
           inputContainerStyle,
@@ -99,6 +102,8 @@ export default function InputField({
             fontWeight: '600',
           }}
           placeholderTextColor={tokens.textMuted}
+          underlineColorAndroid="transparent"
+          selectionColor={tokens.tintStrong}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           {...props}

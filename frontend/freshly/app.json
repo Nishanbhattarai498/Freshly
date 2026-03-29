@@ -12,6 +12,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.freshly.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/logo.png",
@@ -46,7 +48,11 @@
     },
     "extra": {
       "API_URL": "https://freshly-backend-5vmz.onrender.com/api",
-      "SOCKET_URL": "https://freshly-backend-5vmz.onrender.com"
+      "SOCKET_URL": "https://freshly-backend-5vmz.onrender.com",
+      "router": {},
+      "eas": {
+        "projectId": "b24b2266-7b2b-46ca-86ab-aafd22276815"
+      }
     }
   }
 }

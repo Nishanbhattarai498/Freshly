@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { api } from '../../services/api';
@@ -73,6 +73,7 @@ export default function ConversationScreen() {
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
   const getTokenRef = useRef(getToken);
+  const scrollViewRef = useRef<ScrollView | null>(null);
 
   useEffect(() => {
     getTokenRef.current = getToken;
@@ -84,6 +85,16 @@ export default function ConversationScreen() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [otherUser, setOtherUser] = useState<ChatUser | null>(null);
+
+  useEffect(() => {
+    if (!messages.length) return;
+
+    const timer = setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 80);
+
+    return () => clearTimeout(timer);
+  }, [messages]);
 
   const getTokenWithTimeout = useCallback(async () => {
     const timeoutMs = 9000;
@@ -321,8 +332,8 @@ export default function ConversationScreen() {
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-white dark:bg-gray-950"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 18}
     >
       <LinearGradient
         colors={isDark ? ['#0f172a', '#064e3b'] : ['#dbeafe', '#dcfce7']}
@@ -350,20 +361,17 @@ export default function ConversationScreen() {
         ) : null}
       </LinearGradient>
 
-      <FlatList
-        data={messages}
-        keyExtractor={(item, idx) => String(item?.id ?? idx)}
-        contentContainerStyle={{ padding: 16, paddingBottom: 96, paddingTop: 14 }}
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={{ padding: 16, paddingBottom: Math.max(insets.bottom + 138, 138), paddingTop: 14 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-        removeClippedSubviews
-        initialNumToRender={12}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        renderItem={({ item }) => {
+        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+      >
+        {messages.length ? messages.map((item, idx) => {
           const mine = item?.senderId === userId;
           return (
-            <View className={`mb-3 ${mine ? 'items-end' : 'items-start'}`}>
+            <View key={String(item?.id ?? idx)} className={`mb-3 ${mine ? 'items-end' : 'items-start'}`}>
               <View className={`max-w-[86%] px-4 py-2.5 rounded-2xl ${mine ? 'bg-emerald-600 border border-emerald-500' : 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}>
                 <Text className={`${mine ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
                   {item?.content || '(media message)'}
@@ -371,15 +379,17 @@ export default function ConversationScreen() {
               </View>
             </View>
           );
-        }}
-        ListEmptyComponent={
+        }) : (
           <View className="items-center mt-8">
             <Text className="text-gray-500 dark:text-gray-400">No messages yet.</Text>
           </View>
-        }
-      />
+        )}
+      </ScrollView>
 
-      <View className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex-row items-center">
+      <View
+        className="px-4 pt-3 border-t border-gray-200 dark:border-gray-800 flex-row items-center"
+        style={{ paddingBottom: Math.max(insets.bottom + 18, 28) }}
+      >
         <TextInput
           value={input}
           onChangeText={setInput}

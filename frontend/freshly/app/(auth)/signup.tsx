@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, Alert, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
 import { useSignUp, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Mail, Lock, Key, User, ArrowRight, Store, Users } from 'lucide-react-native';
@@ -108,16 +108,18 @@ export default function SignUp() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
-      style={{ flex: 1, backgroundColor: isDark ? '#07141d' : '#f4f8f6' }}
-    >
+    <View style={{ flex: 1, backgroundColor: isDark ? '#07141d' : '#f4f8f6' }}>
       <LinearGradient colors={isDark ? ['#07141d', '#0d2225', '#11342e'] : ['#f3fff9', '#daf7eb', '#ddf2ff']} style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 22 }}
-          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingTop: Math.max(insets.top + 24, 32),
+            paddingBottom: Math.max(insets.bottom + 28, 28),
+            paddingHorizontal: 22,
+          }}
+          keyboardShouldPersistTaps="always"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         >
           <View style={{ marginBottom: 22 }}>
             <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: isDark ? 'rgba(45,212,191,0.12)' : 'rgba(20,184,166,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
@@ -204,6 +206,6 @@ export default function SignUp() {
           </View>
         </ScrollView>
       </LinearGradient>
-    </KeyboardAvoidingView>
+    </View>
   );
 }

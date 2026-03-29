@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { Slot, useRouter, useSegments } from 'expo-router';
-import { Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import * as NavigationBar from 'expo-navigation-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { House, ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { MessagesProvider } from '../contexts/MessagesContext';
 import { setAuthTokenProvider } from '../services/api';
 import '../global.css';
@@ -50,32 +49,6 @@ const InitialLayout = () => {
   }, [getToken]);
 
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
-
-    const inAuthGroup = segments[0] === '(auth)';
-
-    const syncNavigationBarMode = async () => {
-      try {
-        if (inAuthGroup) {
-          await NavigationBar.setPositionAsync('relative');
-          await NavigationBar.setBackgroundColorAsync('#07141d');
-          await NavigationBar.setVisibilityAsync('visible');
-          return;
-        }
-
-        await NavigationBar.setPositionAsync('absolute');
-        await NavigationBar.setBackgroundColorAsync('#00000000');
-        await NavigationBar.setBehaviorAsync('overlay-swipe');
-        await NavigationBar.setVisibilityAsync('hidden');
-      } catch (error) {
-        console.log('Navigation bar mode unavailable', error);
-      }
-    };
-
-    void syncNavigationBarMode();
-  }, [segments]);
-
-  useEffect(() => {
     if (!isLoaded) return;
 
     const inAuthGroup = segments[0] === '(auth)';
@@ -88,42 +61,51 @@ const InitialLayout = () => {
     }
   }, [isSignedIn, isLoaded, segments, router]);
 
-  const inTabsGroup = segments[0] === '(tabs)';
-  const onHomeScreen = inTabsGroup && segments[1] === 'home';
-  const showHomeBackButton = isSignedIn && !onHomeScreen;
+  const inAuthGroup = segments[0] === '(auth)';
+  const showBackButton = isLoaded && (inAuthGroup || isSignedIn);
+
+  const handleBackPress = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    if (isSignedIn) {
+      router.replace('/(tabs)/home');
+      return;
+    }
+
+    router.replace('/(auth)/login');
+  };
 
   return (
     <View style={{ flex: 1 }}>
       <Slot />
-      {showHomeBackButton ? (
+      {showBackButton ? (
         <TouchableOpacity
-          onPress={() => router.replace('/(tabs)/home')}
+          onPress={handleBackPress}
           activeOpacity={0.88}
           style={{
             position: 'absolute',
-            top: Math.max(insets.top + 6, 18),
+            top: Math.max(insets.top + 6, 16),
             left: 16,
             zIndex: 50,
-            flexDirection: 'row',
+            width: 44,
+            height: 44,
             alignItems: 'center',
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            borderRadius: 999,
-            backgroundColor: 'rgba(8,20,29,0.84)',
+            justifyContent: 'center',
+            borderRadius: 22,
+            backgroundColor: 'rgba(8,20,29,0.78)',
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.12)',
+            borderColor: 'rgba(255,255,255,0.1)',
             shadowColor: '#08111d',
-            shadowOpacity: 0.22,
-            shadowRadius: 12,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: 8,
+            shadowOpacity: 0.18,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 5 },
+            elevation: 6,
           }}
         >
-          <ChevronLeft size={16} color="#ffffff" />
-          <House size={15} color="#99f6e4" style={{ marginLeft: 2 }} />
-          <Text style={{ color: '#ffffff', fontWeight: '800', marginLeft: 8, fontSize: 12, letterSpacing: 0.3 }}>
-            Home
-          </Text>
+          <ChevronLeft size={20} color="#ffffff" />
         </TouchableOpacity>
       ) : null}
     </View>
