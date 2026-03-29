@@ -33,20 +33,3 @@ services:
     buildCommand: pip install -r ml/service/requirements.txt
     startCommand: python -m uvicorn ml.service.app:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-
-  - name: freshly-keepalive
-    type: cron
-    runtime: node
-    plan: starter
-    rootDir: backend
-    autoDeployTrigger: commit
-    buildCommand: npm install
-    startCommand: node scripts/render-keepalive.js
-    schedule: "*/10 * * * *"
-    envVars:
-      - key: BACKEND_HEALTH_URL
-        value: https://freshly-backend.onrender.com/health
-      - key: BACKEND_ML_STATUS_URL
-        value: https://freshly-backend.onrender.com/api/ml/status
-      - key: ML_HEALTH_URL
-        value: https://freshly-ml.onrender.com/health
