@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { Slot, useRouter, useSegments } from 'expo-router';
+import Constants from 'expo-constants';
 import { Text, TouchableOpacity, View } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +27,9 @@ const tokenCache = {
   },
 };
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const publishableKey =
+  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+  (Constants.expoConfig?.extra?.clerkPublishableKey as string | undefined);
 
 const InitialLayout = () => {
   const { isLoaded, isSignedIn, getToken } = useAuth();

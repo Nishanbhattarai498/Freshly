@@ -17,7 +17,6 @@
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/logo.png",
-        "backgroundImage": "#E6F4FE",
         "monochromeImage": "./assets/images/logo.png"
       },
       "edgeToEdgeEnabled": true,
@@ -47,6 +46,7 @@
       "reactCompiler": true
     },
     "extra": {
+      "clerkPublishableKey": "pk_test_c3Ryb25nLXN0aW5rYnVnLTQwLmNsZXJrLmFjY291bnRzLmRldiQ",
       "API_URL": "https://freshly-backend-5vmz.onrender.com/api",
       "SOCKET_URL": "https://freshly-backend-5vmz.onrender.com",
       "router": {},
