@@ -1,5 +1,5 @@
-const backendHealthUrl = process.env.BACKEND_HEALTH_URL || 'https://freshly-backend.onrender.com/health';
-const backendMlStatusUrl = process.env.BACKEND_ML_STATUS_URL || 'https://freshly-backend.onrender.com/api/ml/status';
+const backendHealthUrl = process.env.BACKEND_HEALTH_URL || 'https://freshly-backend-5vmz.onrender.com/health';
+const backendMlStatusUrl = process.env.BACKEND_ML_STATUS_URL || 'https://freshly-backend-5vmz.onrender.com/api/ml/status';
 const mlHealthUrl = process.env.ML_HEALTH_URL || 'https://freshly-ml.onrender.com/health';
 
 const endpoints = [

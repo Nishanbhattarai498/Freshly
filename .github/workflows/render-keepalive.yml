@@ -21,7 +21,7 @@ jobs:
 
       - name: Ping backend and ML services
         env:
-          BACKEND_HEALTH_URL: https://freshly-backend.onrender.com/health
-          BACKEND_ML_STATUS_URL: https://freshly-backend.onrender.com/api/ml/status
+          BACKEND_HEALTH_URL: https://freshly-backend-5vmz.onrender.com/health
+          BACKEND_ML_STATUS_URL: https://freshly-backend-5vmz.onrender.com/api/ml/status
           ML_HEALTH_URL: https://freshly-ml.onrender.com/health
         run: node backend/scripts/render-keepalive.js

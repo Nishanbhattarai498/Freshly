@@ -45,8 +45,8 @@
       "reactCompiler": true
     },
     "extra": {
-      "API_URL": "https://freshly-backend.onrender.com/api",
-      "SOCKET_URL": "https://freshly-backend.onrender.com"
+      "API_URL": "https://freshly-backend-5vmz.onrender.com/api",
+      "SOCKET_URL": "https://freshly-backend-5vmz.onrender.com"
     }
   }
 }
